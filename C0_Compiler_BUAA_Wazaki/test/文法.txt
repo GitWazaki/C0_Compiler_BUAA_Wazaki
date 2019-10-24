@@ -1,0 +1,223 @@
+generative = {
+    "加法运算符": [[PLUS], [MINU]],
+    "乘法运算符": [[MULT], [DIV]],
+    "关系运算符": [[LSS], [LEQ], [GRE], [GEQ], [NEQ], [EQL]],
+    "字符串": [[STRCON]],
+    "程序": [["常量说明", "变量说明", "函数定义组", "主函数"]],
+    "函数定义组": [
+        ["函数定义", "函数定义组"],
+        EMPTY
+    ],
+    "函数定义": [
+        ["有返回值函数定义"],
+        ["无返回值函数定义"]
+    ],
+    "常量说明": [
+        [CONSTTK, "常量定义", SEMICN, "常量说明"],
+        EMPTY,
+    ],
+    "常量定义": [
+        ["常量定义int", "常量定义int组"],
+        ["常量定义char", "常量定义char组"]
+    ],
+    "无符号整数": [[INTCON]],
+    "整数": [
+        [PLUS, "无符号整数"],
+        [MINU, "无符号整数"],
+        ['无符号整数'],
+    ],
+    "常量定义int": [
+		[INTTK, IDENFR, ASSIGN, "整数"]
+	],
+    "常量定义int组": [
+        [COMMA, IDENFR, ASSIGN, "整数", "常量定义int组"],
+        EMPTY
+    ],
+    "常量定义char": [
+		[CHARTK, IDENFR, ASSIGN, CHARCON]
+	],
+    "常量定义char组": [
+        [COMMA, IDENFR, ASSIGN, CHARCON, "常量定义char组"],
+        EMPTY
+    ],
+    "声明头部": [
+        [INTTK, IDENFR],
+        [CHARTK, IDENFR]
+    ],
+    "变量说明": [
+        ["变量定义", SEMICN, "变量说明"],		SEMICN = ;
+        EMPTY
+    ],
+    "变量定义": [
+		["类型标识符", "变量定义名", "变量定义名组"]
+	],
+    "变量定义名": [
+		[IDENFR, "变量定义名带数组"]
+	],
+    "变量定义名带数组": [
+        [LBRACK, "无符号整数", RBRACK],
+        EMPTY
+    ],
+    "变量定义名组": [
+        [COMMA, "变量定义名", "变量定义名组"],
+        EMPTY
+    ],
+    "类型标识符": [[INTTK], [CHARTK]],
+    "有返回值函数定义": [["声明头部", LPARENT, "参数表", RPARENT, LBRACE, "复合语句", RBRACE]],
+    "无返回值函数定义": [[VOIDTK, IDENFR, LPARENT, "参数表", RPARENT, LBRACE, "复合语句", RBRACE]],
+    "复合语句": [["常量说明", "变量说明", "语句列"]],
+    "参数表": [["类型标识符", IDENFR, "参数表组"], EMPTY],
+    "参数表组": [[COMMA, "类型标识符", IDENFR, "参数表组"], EMPTY],
+    "主函数": [[VOIDTK, MAINTK, LPARENT, RPARENT, LBRACE, "复合语句", RBRACE]],
+    "表达式前缀": [
+        [PLUS],
+        [MINU],
+        EMPTY
+    ],
+    "表达式": [["表达式前缀", "项", "表达式组"]],
+    "表达式组": [
+        ["加法运算符", "项", "表达式组"],
+        EMPTY
+    ],
+    "项": [["因子", "项组"]],
+    "项组": [
+        ["乘法运算符", "因子", "项组"],
+        EMPTY
+    ],
+    "因子以标识符开始": [
+        [LBRACK, "表达式", RBRACK],
+        EMPTY
+    ],
+    "因子": [
+        [IDENFR, "因子以标识符开始"],
+        [LPARENT, "表达式", RPARENT],
+        ["整数"],
+        [CHARCON],
+        ["函数调用语句"],
+    ],
+    "语句": [
+        ["条件语句"],
+        ["循环语句"],
+        [LBRACE, "语句列", RBRACE],
+        ["函数调用语句", SEMICN],
+        ["赋值语句", SEMICN],
+        ["读语句", SEMICN],
+        ["写语句", SEMICN],
+        [SEMICN],
+        ["返回语句", SEMICN]
+    ],
+    "赋值语句标识符后": [
+        [ASSIGN, "表达式"],
+        [LBRACK, "表达式", RBRACK, ASSIGN, "表达式"]
+    ],
+    "赋值语句": [[IDENFR, "赋值语句标识符后"]],
+    "条件语句": [[IFTK, LPARENT, "条件", RPARENT, "语句", "条件语句else"]],
+    "条件语句else": [
+        [ELSETK, "语句"],
+        EMPTY
+    ],
+    "条件": [["表达式", "条件表达式后"]],
+    "条件表达式后": [
+        ["关系运算符", "表达式"],
+        EMPTY,
+    ],
+    "循环语句": [
+        [WHILETK, LPARENT, "条件", RPARENT, "语句"],
+        [DOTK, "语句", WHILETK, LPARENT, "条件", RPARENT],  # FIXME: SEMICN?
+        [FORTK, LPARENT, IDENFR, ASSIGN, "表达式", SEMICN, "条件", SEMICN, IDENFR, ASSIGN, IDENFR, "加法运算符", "步长", RPARENT,
+         "语句"],
+    ],
+    "步长": [["无符号整数"]],
+    "函数调用语句": [[IDENFR, LPARENT, "值参数表", RPARENT]],
+    "值参数表": [
+        ["表达式", "值参数表组"],
+        EMPTY
+    ],
+    "值参数表组": [
+        [COMMA, "表达式", "值参数表组"],
+        EMPTY
+    ],
+    "语句列": [
+        ["语句", "语句列"],
+        EMPTY
+    ],
+    "读语句": [[SCANFTK, LPARENT, IDENFR, "标识符组", RPARENT]],
+    "标识符组": [
+        [COMMA, IDENFR, "标识符组"],
+        EMPTY
+    ],
+    "写语句": [[PRINTFTK, LPARENT, "写语句后"]],
+    "写语句后": [
+        ["字符串", "写语句字符串"],
+        ["表达式", RPARENT],
+    ],
+    "写语句字符串": [
+        [COMMA, "表达式", RPARENT],
+        [RPARENT],
+    ],
+    "返回语句": [[RETURNTK, "返回语句后"]],
+    "返回语句后": [
+        [LPARENT, "表达式", RPARENT],
+        EMPTY
+    ]
+}
+
+ENABLE_TRANS = True
+zh2en = [
+    ["加法运算符", "plusOp"],
+    ["乘法运算符", "mulOp"],
+    ["关系运算符", "relationOp"],
+    ["字符串", "strconst"],
+    ["程序", "program"],
+    ["函数定义组", "funcDefGroup"],
+    ["函数定义", "funcDef"],
+    ["常量说明", "constDec"],
+    ["常量定义", "constDef"],
+    ["无符号整数", "uninteger"],
+    ["整数", "integer"],
+    ["常量定义int", "constDefInt"],
+    ["常量定义int组", "constDefIntGroup"],
+    ["常量定义char", "constDefChar"],
+    ["常量定义char组", "constDefCharGroup"],
+    ["声明头部", "decHead"],
+    ["变量说明", "verDec"],
+    ["变量定义", "verDef"],
+    ["变量定义名", "verDefName"],
+    ["变量定义名带数组", "verDefNameArr"],
+    ["变量定义名组", "verDefNameGroup"],
+    ["类型标识符", "typeIdent"],
+    ["有返回值函数定义", "retFuncDef"],
+    ["无返回值函数定义", "nonRetFuncDef"],
+    ["复合语句", "compStatement"],
+    ["参数表", "paraList"],
+    ["参数表组", "paraListGroup"],
+    ["主函数", "mainFunc"],
+    ["表达式前缀", "exprPrefix"],
+    ["表达式", "expr"],
+    ["表达式组", "exprGroup"],
+    ["项", "term"],
+    ["项组", "termGroup"],
+    ["因子以标识符开始", "factorWithIdent"],
+    ["因子", "factor"],
+    ["语句", "statement"],
+    ["赋值语句标识符后", "assignWithIdent"],
+    ["赋值语句", "assignStat"],
+    ["条件语句", "condStat"],
+    ["条件语句else", "condStatElse"],
+    ["条件", "cond"],
+    ["条件表达式后", "condExprEnd"],
+    ["循环语句", "cycleStat"],
+    ["步长", "step"],
+    ["函数调用语句", "funcCall"],
+    ["值参数表", "valParaList"],
+    ["值参数表组", "valParaListGroup"],
+    ["语句列", "statementCol"],
+    ["读语句", "scanfStat"],
+    ["标识符组", "identGroup"],
+    ["写语句", "printfStat"],
+    ["写语句后", "printfStatEnd"],
+    ["写语句字符串", "printfStr"],
+    ["返回语句", "retStat"],
+    ["返回语句后", "retStatEnd"],
+
+]

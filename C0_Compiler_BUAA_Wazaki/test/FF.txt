@@ -1,0 +1,55 @@
+加法运算符: False, {'MINU', 'PLUS'}, {'MINU', 'INTCON', 'LPARENT', 'CHARCON', 'PLUS', 'IDENFR'}
+乘法运算符: False, {'DIV', 'MULT'}, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}
+关系运算符: False, {'EQL', 'LEQ', 'NEQ', 'GEQ', 'GRE', 'LSS'}, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}
+字符串: False, {'STRCON'}, {'COMMA', 'RPARENT'}
+程序: False, {'INTTK', 'CHARTK', 'VOIDTK', 'CONSTTK'}, set()
+函数定义组: True, {'INTTK', 'CHARTK', 'VOIDTK'}, {'VOIDTK'}
+函数定义: False, {'INTTK', 'VOIDTK', 'CHARTK'}, {'INTTK', 'VOIDTK', 'CHARTK'}
+常量说明: True, {'CONSTTK'}, {'SEMICN', 'DOTK', 'INTTK', 'IFTK', 'RBRACE', 'VOIDTK', 'WHILETK', 'IDENFR', 'LBRACE', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'CHARTK'}
+常量定义: False, {'INTTK', 'CHARTK'}, {'SEMICN'}
+无符号整数: False, {'INTCON'}, {'SEMICN', 'RBRACK', 'MULT', 'RPARENT', 'NEQ', 'DIV', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+整数: False, {'MINU', 'INTCON', 'PLUS'}, {'SEMICN', 'RBRACK', 'MULT', 'RPARENT', 'NEQ', 'DIV', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+常量定义int: False, {'INTTK'}, {'SEMICN', 'COMMA'}
+常量定义int组: True, {'COMMA'}, {'SEMICN'}
+常量定义char: False, {'CHARTK'}, {'SEMICN', 'COMMA'}
+常量定义char组: True, {'COMMA'}, {'SEMICN'}
+声明头部: False, {'INTTK', 'CHARTK'}, {'LPARENT'}
+变量说明: True, {'INTTK', 'CHARTK'}, {'SEMICN', 'DOTK', 'INTTK', 'IFTK', 'RBRACE', 'VOIDTK', 'WHILETK', 'IDENFR', 'LBRACE', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'CHARTK'}
+变量定义: False, {'INTTK', 'CHARTK'}, {'SEMICN'}
+变量定义名: False, {'IDENFR'}, {'SEMICN', 'COMMA'}
+变量定义名带数组: True, {'LBRACK'}, {'SEMICN', 'COMMA'}
+变量定义名组: True, {'COMMA'}, {'SEMICN'}
+类型标识符: False, {'INTTK', 'CHARTK'}, {'IDENFR'}
+有返回值函数定义: False, {'INTTK', 'CHARTK'}, {'INTTK', 'VOIDTK', 'CHARTK'}
+无返回值函数定义: False, {'VOIDTK'}, {'INTTK', 'VOIDTK', 'CHARTK'}
+复合语句: True, {'SEMICN', 'DOTK', 'INTTK', 'IFTK', 'WHILETK', 'LBRACE', 'IDENFR', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'CHARTK', 'CONSTTK'}, {'RBRACE'}
+参数表: True, {'INTTK', 'CHARTK'}, {'RPARENT'}
+参数表组: True, {'COMMA'}, {'RPARENT'}
+主函数: False, {'VOIDTK'}, set()
+表达式前缀: True, {'MINU', 'PLUS'}, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}
+表达式: False, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}, {'SEMICN', 'RBRACK', 'RPARENT', 'NEQ', 'COMMA', 'LEQ', 'EQL', 'LSS', 'GEQ', 'GRE'}
+表达式组: True, {'MINU', 'PLUS'}, {'SEMICN', 'RBRACK', 'RPARENT', 'NEQ', 'COMMA', 'LEQ', 'LSS', 'EQL', 'GEQ', 'GRE'}
+项: False, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}, {'SEMICN', 'RBRACK', 'RPARENT', 'NEQ', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+项组: True, {'DIV', 'MULT'}, {'SEMICN', 'RBRACK', 'RPARENT', 'NEQ', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+因子以标识符开始: True, {'LBRACK'}, {'SEMICN', 'RBRACK', 'MULT', 'RPARENT', 'NEQ', 'DIV', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+因子: False, {'MINU', 'INTCON', 'LPARENT', 'CHARCON', 'PLUS', 'IDENFR'}, {'SEMICN', 'RBRACK', 'MULT', 'RPARENT', 'NEQ', 'DIV', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+语句: False, {'SEMICN', 'DOTK', 'IFTK', 'WHILETK', 'LBRACE', 'FORTK', 'IDENFR', 'PRINTFTK', 'SCANFTK', 'RETURNTK'}, {'SEMICN', 'DOTK', 'IFTK', 'RBRACE', 'WHILETK', 'LBRACE', 'IDENFR', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'ELSETK'}
+赋值语句标识符后: False, {'ASSIGN', 'LBRACK'}, {'SEMICN'}
+赋值语句: False, {'IDENFR'}, {'SEMICN'}
+条件语句: False, {'IFTK'}, {'SEMICN', 'DOTK', 'IFTK', 'WHILETK', 'RBRACE', 'LBRACE', 'IDENFR', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'ELSETK'}
+条件语句else: True, {'ELSETK'}, {'SEMICN', 'DOTK', 'IFTK', 'WHILETK', 'RBRACE', 'LBRACE', 'IDENFR', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'ELSETK'}
+条件: False, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}, {'SEMICN', 'RPARENT'}
+条件表达式后: True, {'NEQ', 'LEQ', 'EQL', 'LSS', 'GEQ', 'GRE'}, {'SEMICN', 'RPARENT'}
+循环语句: False, {'DOTK', 'WHILETK', 'FORTK'}, {'SEMICN', 'DOTK', 'IFTK', 'WHILETK', 'RBRACE', 'LBRACE', 'IDENFR', 'FORTK', 'PRINTFTK', 'SCANFTK', 'RETURNTK', 'ELSETK'}
+步长: False, {'INTCON'}, {'RPARENT'}
+函数调用语句: False, {'IDENFR'}, {'SEMICN', 'RBRACK', 'MULT', 'RPARENT', 'NEQ', 'DIV', 'COMMA', 'LEQ', 'LSS', 'MINU', 'EQL', 'GEQ', 'PLUS', 'GRE'}
+值参数表: True, {'INTCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}, {'RPARENT'}
+值参数表组: True, {'COMMA'}, {'RPARENT'}
+语句列: True, {'IFTK', 'IDENFR', 'PRINTFTK', 'RETURNTK', 'SEMICN', 'DOTK', 'WHILETK', 'LBRACE', 'FORTK', 'SCANFTK'}, {'RBRACE'}
+读语句: False, {'SCANFTK'}, {'SEMICN'}
+标识符组: True, {'COMMA'}, {'RPARENT'}
+写语句: False, {'PRINTFTK'}, {'SEMICN'}
+写语句后: False, {'INTCON', 'STRCON', 'IDENFR', 'MINU', 'LPARENT', 'CHARCON', 'PLUS'}, {'SEMICN'}
+写语句字符串: False, {'COMMA', 'RPARENT'}, {'SEMICN'}
+返回语句: False, {'RETURNTK'}, {'SEMICN'}
+返回语句后: True, {'LPARENT'}, {'SEMICN'}

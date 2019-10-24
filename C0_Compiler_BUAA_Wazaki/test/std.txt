@@ -1,0 +1,329 @@
+CONSTTK const
+INTTK int
+IDENFR a0
+ASSIGN =
+INTCON 0
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR a1
+ASSIGN =
+PLUS +
+INTCON 0
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR a2
+ASSIGN =
+MINU -
+INTCON 0
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR bc
+ASSIGN =
+INTCON 21
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR bc1
+ASSIGN =
+PLUS +
+INTCON 12
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR _b2c
+ASSIGN =
+MINU -
+INTCON 56789
+<无符号整数>
+<整数>
+<常量定义>
+SEMICN ;
+<常量说明>
+INTTK int
+IDENFR x
+COMMA ,
+IDENFR x_1
+COMMA ,
+IDENFR xx2
+LBRACK [
+INTCON 0
+<无符号整数>
+RBRACK ]
+COMMA ,
+IDENFR x3xx
+LBRACK [
+INTCON 20
+<无符号整数>
+RBRACK ]
+<变量定义>
+SEMICN ;
+<变量说明>
+INTTK int
+IDENFR r6
+<声明头部>
+LPARENT (
+INTTK int
+IDENFR a0
+<参数表>
+RPARENT )
+LBRACE {
+IFTK if
+LPARENT (
+IDENFR a0
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+LBRACE {
+IFTK if
+LPARENT (
+IDENFR a1
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+LBRACE {
+DOTK do
+LBRACE {
+IDENFR bc
+ASSIGN =
+IDENFR bc
+<因子>
+<项>
+MINU -
+INTCON 1
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+WHILETK while
+LPARENT (
+IDENFR bc
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+<循环语句>
+<语句>
+<语句列>
+RBRACE }
+<语句>
+ELSETK else
+LBRACE {
+PRINTFTK printf
+LPARENT (
+STRCON first else
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<条件语句>
+<语句>
+<语句列>
+RBRACE }
+<语句>
+ELSETK else
+LBRACE {
+PRINTFTK printf
+LPARENT (
+STRCON second else
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<条件语句>
+<语句>
+<语句列>
+<复合语句>
+RBRACE }
+<有返回值函数定义>
+VOIDTK void
+IDENFR v4
+LPARENT (
+<参数表>
+RPARENT )
+LBRACE {
+IFTK if
+LPARENT (
+IDENFR a0
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+LBRACE {
+IFTK if
+LPARENT (
+IDENFR a1
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+LBRACE {
+WHILETK while
+LPARENT (
+IDENFR bc
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+LBRACE {
+IDENFR bc
+ASSIGN =
+IDENFR bc
+<因子>
+<项>
+MINU -
+INTCON 1
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<循环语句>
+<语句>
+<语句列>
+RBRACE }
+<语句>
+ELSETK else
+LBRACE {
+PRINTFTK printf
+LPARENT (
+STRCON first else
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<条件语句>
+<语句>
+<语句列>
+RBRACE }
+<语句>
+ELSETK else
+LBRACE {
+LBRACE {
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+LBRACE {
+PRINTFTK printf
+LPARENT (
+STRCON second else
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<条件语句>
+<语句>
+<语句列>
+<复合语句>
+RBRACE }
+<无返回值函数定义>
+VOIDTK void
+MAINTK main
+LPARENT (
+RPARENT )
+LBRACE {
+LBRACE {
+LBRACE {
+LBRACE {
+SEMICN ;
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<语句列>
+RBRACE }
+<语句>
+<语句列>
+<复合语句>
+RBRACE }
+<主函数>
+<程序>
