@@ -4,11 +4,11 @@
 
 #include<string>
 
-#define TAG_N 40		// actually 36 + 2
+#define TOKEN_NUM 40		// actually 36 + 2
 #define RESERVE_NUM 13	// actually 13
 using namespace std;
 
-static string tag[TAG_N] = {	//用于toString输出
+static string tag[TOKEN_NUM] = {	//用于toString输出
 
 	"IDENFR", // 标识符
 	"INTCON", // 整型常量
@@ -154,15 +154,11 @@ enum tokenType {	//定义token类型
 
 };
 
-/*typedef union tokenVal {
-	char c;
-	int number;
-	string* str;
-} tokenVal;*/
-
 struct token {
 	tokenType type;
 	string val;
+	int line;
+	int col;
 	string typeToString() const;
 	string toString() const;
 };

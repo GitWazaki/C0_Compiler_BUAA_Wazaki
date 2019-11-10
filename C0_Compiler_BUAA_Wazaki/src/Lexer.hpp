@@ -3,17 +3,17 @@
 #define LEX_ANALYSIS_H
 
 #include <cctype>
-#include "token.hpp"
 
 namespace Lexer {
 
 	class Lexer {
 
 	public:
-		Lexer(string s, ofstream& fout) : inputStr(s), fout(fout) {
+		Lexer(string s, ofstream& fout, Error::Error& err) : inputStr(s), fout(fout), err(err) {
 			filesize = s.size();
 			startLoc = nextLoc = 0;
-			lineNum = 0;
+			lineNum = 1;
+			colNum = 1;
 			tok = token{};
 		}
 
@@ -24,13 +24,17 @@ namespace Lexer {
 	private:
 		string inputStr;
 		ofstream& fout;
+		Error::Error& err;
 		long long int filesize;
 		long long startLoc;
 		long long nextLoc;
 		int lineNum;
+		int colNum;
 		token tok;
 		string sym;
 		char ch;
+
+		void error();
 
 		void clean(bool restart = true);
 		void getch();
@@ -41,6 +45,7 @@ namespace Lexer {
 		void getDigit();
 
 		bool isBlank();
+		bool isChar();
 		bool isletter() const;
 		bool isDigit() const;
 		bool isSingleQuot() const;
@@ -64,6 +69,10 @@ namespace Lexer {
 		int checkReserve() const;
 	};
 
+	inline void Lexer::error() {
+		err.errorHandle({tok,Error::LEX_ERROR, lineNum, colNum});
+	}
+
 	inline void Lexer::clean(bool restart) {
 		if (restart) {
 			nextLoc = startLoc;
@@ -75,7 +84,7 @@ namespace Lexer {
 
 	inline token Lexer::getToken(int preN) {
 		clean(preN == 0);
-		while (std::isspace(ch))
+		while (isBlank())
 			getch();
 
 		if (isletter()) {
@@ -99,6 +108,9 @@ namespace Lexer {
 		} else if (isSingleQuot()) {
 			tok.type = CHARCON;
 			getch(); //读取字符常量
+			if(!isChar()) {
+				error();
+			}
 			tok.val = ch;
 			getch(); // 读右侧单引号
 		} else if (isDoubleQuot()) {
@@ -154,6 +166,7 @@ namespace Lexer {
 				tok.val = "!=";
 			} else {
 				//TODO error
+				error();
 				retract();
 			}
 		} else if (isSemi()) {
@@ -182,7 +195,11 @@ namespace Lexer {
 			tok.val = ch;
 		} else {
 			//TODO error
+			error();
+			getch();		//读过非法字符
 		}
+		tok.line = lineNum;
+		tok.col = colNum;
 		return tok;
 	}
 
@@ -197,6 +214,7 @@ namespace Lexer {
 		if (nextLoc == filesize) {
 			tok.type = FINISH;
 		}
+		colNum++;
 		ch = inputStr[nextLoc++];
 	}
 
@@ -210,8 +228,10 @@ namespace Lexer {
 			if (32 <= ch && ch <= 126 && ch != 34) {
 				catSym();
 				getch();
+			} else {
+				//TODO ERROR
+				error();
 			}
-			//TODO else error
 		}
 	}
 
@@ -227,12 +247,6 @@ namespace Lexer {
 	}
 
 	inline void Lexer::getDigit() {
-		// if(ch == '0') {
-		// 	getch();
-		// 	if(isDigit()) {
-		// 		error();
-		// 	}
-		// } else {}
 		while (isDigit()) {
 			catSym();
 			getch();
@@ -242,8 +256,13 @@ namespace Lexer {
 	inline bool Lexer::isBlank() {
 		if (ch == '\n') {
 			++lineNum;
+			colNum = 0;
 		}
 		return ch == '\r' || ch == '\n' || ch == '\t' || ch == ' ';
+	}
+
+	inline bool Lexer::isChar() {
+		return isletter() || isDigit() || isPlus() || isMinus() || isMul() || isDivi();
 	}
 
 	inline bool Lexer::isletter() const {

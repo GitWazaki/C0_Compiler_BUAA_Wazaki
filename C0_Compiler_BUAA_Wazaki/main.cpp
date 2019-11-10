@@ -5,9 +5,14 @@
 #include <fstream>
 #include <sstream>
 
+#include "src/token.hpp"
+#include "src/Error.hpp"
+#include "src/Symbol.hpp"
+#include "src/SymbolTable.hpp"
 #include "src/Lexer.hpp"
-#include "src/Parser.hpp"
 #include "src/Parser2.hpp"
+
+
 
 using namespace std;
 
@@ -23,11 +28,14 @@ string readFileIntoString(string filename) {
 
 int main() {
 	ofstream fout("output.txt");
+	ofstream errout("error.txt");
+	// ofstream errout("../../../error.txt");
+	Error::Error err{ errout };
 	// ofstream fout("../../../output.txt");
-	Lexer :: Lexer lexer{ readFileIntoString("testfile.txt"),fout };
-	// Lexer :: Lexer lexer{ readFileIntoString("../../../testfile.txt"),fout };
-	Parser::Parser parser{ lexer, fout };
-	Parser2::Parser2 parser2{lexer,fout};
+	Lexer :: Lexer lexer{ readFileIntoString("testfile.txt"),fout,err };
+	// Lexer :: Lexer lexer{ readFileIntoString("../../../testfile.txt"),fout,err };
+	Parser2::Parser2 parser2{lexer,fout,err};
+	
 	
 	parser2.program();
 	
