@@ -25,11 +25,6 @@ namespace Error {
 		OTHERS
 	};
 
-	static vector<tokenType> ErrorSkipSet[TOKEN_NUM]{
-		//TODO
-		{SEMICN},
-	};
-
 	struct errorStruct {
 		token tok;
 		errorType type;
@@ -60,7 +55,10 @@ namespace Error {
 
 	class Error {
 	public:
-		Error(ofstream& fout): fout(fout) {
+		Error(ofstream& fout,string output_setting): fout(fout) {
+			if (output_setting.find('e') != string::npos) {
+				output_error = true;
+			}
 		}
 		
 		void errorHandle(errorStruct e);
@@ -68,10 +66,8 @@ namespace Error {
 
 	private:
 		ofstream& fout;
-		// errorStruct err;
-		// errorType errType;
-		// vector<tokenType> skipList;
 		vector<errorStruct> errorList;
+		bool output_error = false;
 
 	};
 
@@ -85,7 +81,9 @@ namespace Error {
 		int count = errorList.size();
 		for(int i = 0;i<count;i++) {
 			if(errorList[i].type!=OTHERS) {
-				fout << errorList[i].toString() << endl;
+				if (output_error) {
+					fout << errorList[i].toString() << endl;
+				}
 			}
 		}
 	}

@@ -3,13 +3,14 @@
 #define LEX_ANALYSIS_H
 
 #include <cctype>
+#include "token.hpp"
 
 namespace Lexer {
 
 	class Lexer {
 
 	public:
-		Lexer(string s, ofstream& fout, Error::Error& err) : inputStr(s), fout(fout), err(err) {
+		Lexer(string s, Error::Error& err) : inputStr(s), err(err) {
 			filesize = s.size();
 			startLoc = nextLoc = 0;
 			lineNum = 1;
@@ -19,11 +20,10 @@ namespace Lexer {
 
 		void init(string, ofstream&);
 		token getToken(int preN = 0);
-		tokenType eatToken();
+		TokenType::tokenType eatToken();
 
 	private:
 		string inputStr;
-		ofstream& fout;
 		Error::Error& err;
 		long long int filesize;
 		long long startLoc;
@@ -92,21 +92,21 @@ namespace Lexer {
 			int r = checkReserve();
 			if (r > 0) {
 				//success, is reserved word  RESERVE_START < r <RESERVE_END
-				tok.type = static_cast<tokenType>(r);
+				tok.type = static_cast<TokenType::tokenType>(r);
 				tok.val = sym;
 			} else {
 				//failed, is normal symbol
-				tok.type = IDENFR;
+				tok.type = TokenType::IDENFR;
 				tok.val = sym;
 			}
 			retract();
 		} else if (isDigit()) {
 			getDigit();
 			retract();
-			tok.type = INTCON;
+			tok.type = TokenType::INTCON;
 			tok.val = sym;
 		} else if (isSingleQuot()) {
-			tok.type = CHARCON;
+			tok.type = TokenType::CHARCON;
 			getch(); //读取字符常量
 			if(!isChar()) {
 				error();
@@ -115,54 +115,54 @@ namespace Lexer {
 			getch(); // 读右侧单引号
 		} else if (isDoubleQuot()) {
 			getstr();
-			tok.type = STRCON;
+			tok.type = TokenType::STRCON;
 			tok.val = sym;
 		} else if (isPlus()) {
-			tok.type = PLUS;
+			tok.type = TokenType::PLUS;
 			tok.val = ch;
 		} else if (isMinus()) {
-			tok.type = MINU;
+			tok.type = TokenType::MINU;
 			tok.val = ch;
 		} else if (isMul()) {
-			tok.type = MULT;
+			tok.type = TokenType::MULT;
 			tok.val = ch;
 		} else if (isDivi()) {
-			tok.type = DIV;
+			tok.type = TokenType::DIV;
 			tok.val = ch;
 		} else if (isLess()) {
 			getch();
 			if (isEqual()) {
-				tok.type = LEQ;
+				tok.type = TokenType::LEQ;
 				tok.val = "<=";
 			} else {
-				tok.type = LSS;
+				tok.type = TokenType::LSS;
 				tok.val = "<";
 				retract();
 			}
 		} else if (isGreater()) {
 			getch();
 			if (isEqual()) {
-				tok.type = GEQ;
+				tok.type = TokenType::GEQ;
 				tok.val = ">=";
 			} else {
-				tok.type = GRE;
+				tok.type = TokenType::GRE;
 				tok.val = ">";
 				retract();
 			}
 		} else if (isEqual()) {
 			getch();
 			if (isEqual()) {
-				tok.type = EQL;
+				tok.type = TokenType::EQL;
 				tok.val = "==";
 			} else {
-				tok.type = ASSIGN;
+				tok.type = TokenType::ASSIGN;
 				tok.val = "=";
 				retract();
 			}
 		} else if (isExclaim()) {
 			getch();
 			if (isEqual()) {
-				tok.type = NEQ;
+				tok.type = TokenType::NEQ;
 				tok.val = "!=";
 			} else {
 				//TODO error
@@ -170,28 +170,28 @@ namespace Lexer {
 				retract();
 			}
 		} else if (isSemi()) {
-			tok.type = SEMICN;
+			tok.type = TokenType::SEMICN;
 			tok.val = ch;
 		} else if (isComm()) {
-			tok.type = COMMA;
+			tok.type = TokenType::COMMA;
 			tok.val = ch;
 		} else if (isLParent()) {
-			tok.type = LPARENT;
+			tok.type = TokenType::LPARENT;
 			tok.val = ch;
 		} else if (isRParent()) {
-			tok.type = RPARENT;
+			tok.type = TokenType::RPARENT;
 			tok.val = ch;
 		} else if (isLBrack()) {
-			tok.type = LBRACK;
+			tok.type = TokenType::LBRACK;
 			tok.val = ch;
 		} else if (isRBrack()) {
-			tok.type = RBRACK;
+			tok.type = TokenType::RBRACK;
 			tok.val = ch;
 		} else if (isLBrace()) {
-			tok.type = LBRACE;
+			tok.type = TokenType::LBRACE;
 			tok.val = ch;
 		} else if (isRBrace()) {
-			tok.type = RBRACE;
+			tok.type = TokenType::RBRACE;
 			tok.val = ch;
 		} else {
 			//TODO error
@@ -203,16 +203,15 @@ namespace Lexer {
 		return tok;
 	}
 
-	inline tokenType Lexer::eatToken() {
+	inline TokenType::tokenType Lexer::eatToken() {
 		//getToken();
 		startLoc = nextLoc;
-		//fout << tok.toString() << endl;
 		return tok.type;
 	}
 
 	inline void Lexer::getch() {
 		if (nextLoc == filesize) {
-			tok.type = FINISH;
+			tok.type = TokenType::FINISH;
 		}
 		colNum++;
 		ch = inputStr[nextLoc++];
@@ -350,7 +349,7 @@ namespace Lexer {
 	inline int Lexer::checkReserve() const {
 		for (int i = 0; i < RESERVE_NUM; i++) {
 			if (sym == reserveList[i]) {
-				return i + RESERVE_START + 1;
+				return i + TokenType::RESERVE_START + 1;
 			}
 		}
 		return -1;

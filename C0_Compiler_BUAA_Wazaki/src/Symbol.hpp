@@ -18,7 +18,19 @@ namespace Symbol {
 	};
 
 	class SymbolItem {
+		
+		string name;
+		SymbolKind kind;
+		SymbolType type;
+		string constVal{};
+		int len = -1;
+		bool is_const = false;
+		bool retFunc = false;
+		vector<SymbolType> paraTypeList;
+		
 	public:
+		bool isGlobal;
+
 		SymbolItem() {}
 		
 		SymbolItem(string name, SymbolKind kind, SymbolType type, string constVal = "") {
@@ -64,6 +76,10 @@ namespace Symbol {
 			return paraTypeList;
 		}
 
+		string getConstVal() {
+			return constVal;
+		}
+
 		bool isConst() {
 			return this->is_const;
 		}
@@ -71,15 +87,18 @@ namespace Symbol {
 		bool isChar() {
 			return type == CHAR;
 		}
+
+		bool isArray() {
+			return kind == ARRAY;
+		}
+
+		int getBytes() {
+			if(isArray()) {
+				return 4 * len;
+			} else {
+				return 4;
+			}
+		}
 		
-	private:
-		string name;
-		SymbolKind kind;
-		SymbolType type;
-		string constVal{};
-		int len = -1;
-		bool is_const = false;
-		bool retFunc = false;
-		vector<SymbolType> paraTypeList;
 	};
 }

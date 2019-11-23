@@ -1,17 +1,18 @@
 // BUAA_Compiler_Wazaki.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
-
 #include <iostream>
+#include <string>
 #include <fstream>
 #include <sstream>
 
+#include "src/meow/meow.hpp"
 #include "src/token.hpp"
 #include "src/Error.hpp"
-#include "src/Symbol.hpp"
 #include "src/SymbolTable.hpp"
 #include "src/Lexer.hpp"
 #include "src/Parser2.hpp"
-
+#include "src/MidCode/MidCode.hpp"
+#include "src/GenObject/GenMips.hpp"
 
 
 using namespace std;
@@ -27,28 +28,29 @@ string readFileIntoString(string filename) {
 }
 
 int main() {
+
+	string input = readFileIntoString("testfile.txt");
 	ofstream fout("output.txt");
 	ofstream errout("error.txt");
-	// ofstream errout("../../../error.txt");
-	Error::Error err{ errout };
+	ofstream midout{ "mid.txt" };
+	ofstream mipsout{ "mips.txt" };
+	// string input = readFileIntoString("../../../testfile.txt");
 	// ofstream fout("../../../output.txt");
-	Lexer :: Lexer lexer{ readFileIntoString("testfile.txt"),fout,err };
-	// Lexer :: Lexer lexer{ readFileIntoString("../../../testfile.txt"),fout,err };
-	Parser2::Parser2 parser2{lexer,fout,err};
+	// ofstream errout("../../../error.txt");
+	// ofstream midout{ "../../../mid.txt" };
+	// ofstream mipsout{ "../../../mips.txt" };
+
+	string out_setting = "semo";
+	 
+	Error::Error err{ errout, out_setting };
+	Lexer :: Lexer lexer{ input,err };
+	Parser2::Parser2 parser2{lexer,fout,err,out_setting };
+	MidCode::MidCode midCodes;
+	GenObject::GenMips genMips{midCodes,midout,mipsout,out_setting};
 	
+	midCodes = parser2.program();
 	
-	parser2.program();
+	genMips.gen();
 	
 	return 0;
 }
-
-// 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
-// 调试程序: F5 或调试 >“开始调试”菜单
-
-// 入门使用技巧: 
-//   1. 使用解决方案资源管理器窗口添加/管理文件
-//   2. 使用团队资源管理器窗口连接到源代码管理
-//   3. 使用输出窗口查看生成输出和其他消息
-//   4. 使用错误列表窗口查看错误
-//   5. 转到“项目”>“添加新项”以创建新的代码文件，或转到“项目”>“添加现有项”以将现有代码文件添加到项目
-//   6. 将来，若要再次打开此项目，请转到“文件”>“打开”>“项目”并选择 .sln 文件

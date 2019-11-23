@@ -1,39 +1,42 @@
 #pragma once
 #include <iostream>
-#include "Lexer.hpp"
 #include "deque"
 #include <map>
+#include "Lexer.hpp"
 #include "Error.hpp"
+#include "MidCode/MidCode.hpp"
 
 namespace Parser2 {
 
 	map<string, bool> funcRetMap;
 	Symbol::SymbolTable symbolTable;
 	int curLine, tokLine;
-
+	int para_num;
+	
 	class Parser2 {
 	public:
-		Parser2(Lexer::Lexer& lexer, ofstream& fout, Error::Error& err) : lexer(lexer), fout(fout), err(err) {
+		Parser2(Lexer::Lexer& lexer, ofstream& fout, Error::Error& err, string output_setting) : lexer(lexer), fout(fout), err(err) {
+			if (output_setting.find('s') != std::string::npos) {
+				output_syntax = true;
+			}
 		}
 
-		void program(); //程序
+		MidCode::MidCode program(); //程序
 
 	private:
 		token tok;
-		tokenType tokType;
+		TokenType::tokenType tokType;
 		deque<token> tokQueue;
 		Lexer::Lexer& lexer;
-		Error::Error& err;
 		ofstream& fout;
+		Error::Error& err;
+		bool output_syntax = false;
 
-		tokenType lookToken(int preN = 0);
-		token eatToken(tokenType);
+		MidCode::MidCode midCodes;
 
-		void plusOp(); //＜加法运算符＞
-		void mulOp(); //＜乘法运算符＞ 
-		bool isMulOp(tokenType token); //增加函数，判断token是否是乘法运算符
-		void relationalOp(); //＜关系运算符＞
-		void strConst(); //字符串常量
+		TokenType::tokenType lookToken(int preN = 0);
+		token eatToken(TokenType::tokenType);
+		void output(string);
 
 		void constDec(); //常量说明
 		void constDef(); //常量定义
@@ -54,30 +57,1470 @@ namespace Parser2 {
 		void funcCallStatement(); //函数调用语句
 		vector<Symbol::SymbolType>  funcCallInputParaList(vector<Symbol::SymbolType>); //值参数表
 		void assignStat(); //赋值语句
-		Symbol::SymbolType expr(); //表达式
+		tuple<Symbol::SymbolType,string> expr(); //表达式
 		void term(); //项
 		void factor(); //因子
 		void condition(); //条件
 		void condStatement(); //条件语句
 		void elseCondStat(); //条件语句else部分
 		void cycleStatement(); //循环语句
-		void step(); //步长
+		token step(); //步长
 		void readStatement(); //读语句
 		void writeStatement(); //写语句
 		void writeStatContent(); //增加函数，处理写语言括号内的内容
 		void retStatement(); //返回语句
 		void mainFunc(); //主函数
+		
 		void addFuncName(bool ret); //功能：添加函数头与有无返回值的对应
+		token plusOp(); //＜加法运算符＞
+		void mulOp(); //＜乘法运算符＞ 
+		bool isMulOp(TokenType::tokenType token); //增加函数，判断token是否是乘法运算符
+		token relationalOp(); //＜关系运算符＞
+		string strConst(); //字符串常量
 
+		//error
 		void error(Error::errorType);
 		Error::errorStruct tokenToError(Error::errorType) const;
 		void skip(Error::errorType);
-
-		Symbol::SymbolType tokenType2SymbolType(tokenType);
-		vector<Symbol::SymbolType> SymbolItemList2SymbolTypeList(vector<Symbol::SymbolItem>);
 		void checkPush(bool);
 		void checkFind(bool);
+		
+		//Symbol Table
+		Symbol::SymbolType tokenType2SymbolType(TokenType::tokenType);	//int 或 char 转 Symbol type
+		vector<Symbol::SymbolType> SymbolItemList2SymbolTypeList(vector<Symbol::SymbolItem>);	//用于函数Symbol中参数表paralist的存储
+
+		//栈
+		void pushRegToStack(string reg_name);
+		void popRegFromStack(string reg_name);
+		void assignToIdent(string ans_reg, string ident);
+		void exprPushIdent(token token);
+		void scanf2midInstr(Symbol::SymbolItem) ;
+		void pushRegPool();
+		void popRegPool();
+		//数组
+		string getArrAddr(string,string);
 	};
+
+	inline TokenType::tokenType Parser2::lookToken(int preN) {
+		while (tokQueue.size() <= preN) {
+			token t = lexer.getToken(preN);
+			if(t.val!="") {
+				tokQueue.push_back(t);
+			} else {
+				lexer.eatToken();
+			}
+		}
+		tok = tokQueue[preN];
+		tokType = tok.type;
+		if(preN == 0) {
+			tokLine = tok.line;
+		}
+		return tokType;
+	}
+
+	inline token Parser2::eatToken(TokenType::tokenType type) {
+		token temp;
+		if (tokQueue.empty()) {
+			tokQueue.push_back(lexer.getToken());
+		}
+		if ((temp = tokQueue.front()).type == type) {
+			tokQueue.pop_front();
+			lexer.eatToken();
+			curLine = tokLine;
+			//lookToken(); //可去除
+		} else {
+			switch (type) {
+			case TokenType::SEMICN:
+				error(Error::MISS_SEMICN);
+				break;
+			case TokenType::RPARENT:
+				error(Error::MISS_RPARENT);
+				break;
+			case TokenType::RBRACK:
+				error(Error::MISS_RBRACK);
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+		}
+		output(temp.toString());
+		return temp;
+	}
+
+	inline void Parser2::output(string s) {
+		if (output_syntax) {
+			fout << s << endl;
+		}
+	}
+
+	//＜程序＞::= ［＜常量说明＞］［＜变量说明＞］{<函数定义>}＜主函数＞
+	inline MidCode::MidCode Parser2::program() {
+		switch (lookToken()) {
+		case TokenType::CONSTTK:
+		case TokenType::INTTK:
+		case TokenType::CHARTK:
+		case TokenType::VOIDTK:
+			constDec();
+			varDec();
+			funcDef();
+			mainFunc();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<程序>");
+		err.errorPrint();
+		return midCodes;
+	}
+
+	//＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}	
+	inline void Parser2::constDec() {
+		bool hasConstDec = false;
+		while (lookToken() == TokenType::CONSTTK) {
+			eatToken(TokenType::CONSTTK);
+			constDef();
+			eatToken(TokenType::SEMICN);
+			if (!hasConstDec) {
+				hasConstDec = true;
+			}
+		}
+		if (hasConstDec) {
+			output("<常量说明>");
+		}
+	}
+
+	// ＜常量定义＞ ::= int＜标识符＞＝＜整数＞{,＜标识符＞＝＜整数＞} | char＜标识符＞＝＜字符＞{ ,＜标识符＞＝＜字符＞ }
+	inline void Parser2::constDef() {
+		token constName;
+		token constVal;
+		bool check;
+		switch (lookToken()) {
+		case TokenType::INTTK:
+			eatToken(TokenType::INTTK);
+			constName = eatToken(TokenType::IDENFR);
+			eatToken(TokenType::ASSIGN);
+			tie(check,constVal) = integer();
+			if(check==false) {
+				error(Error::ERROR_TYPE_TO_CONST);
+			}
+			checkPush(symbolTable.push(Symbol::SymbolItem(
+				constName.val, Symbol::CONST, Symbol::INT, constVal.val)));
+			while (lookToken() == TokenType::COMMA) {
+				//{,＜标识符＞＝＜整数＞}
+				eatToken(TokenType::COMMA);
+				constName = eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				tie(check, constVal) = integer();
+				if (check == false) {
+					error(Error::ERROR_TYPE_TO_CONST);
+				}
+				checkPush(symbolTable.push(Symbol::SymbolItem(
+					constName.val, Symbol::CONST, Symbol::INT, constVal.val)));
+			}
+			break;
+		case TokenType::CHARTK:
+			eatToken(TokenType::CHARTK);
+			constName = eatToken(TokenType::IDENFR);
+			eatToken(TokenType::ASSIGN);
+			if(lookToken()!= TokenType::CHARCON) {
+				error(Error::ERROR_TYPE_TO_CONST);
+			}
+			constVal = eatToken(TokenType::CHARCON);
+			checkPush(symbolTable.push(Symbol::SymbolItem(
+				constName.val, Symbol::CONST, Symbol::CHAR, constVal.val)));
+			while (lookToken() == TokenType::COMMA) {
+				//{ ,＜标识符＞＝＜字符＞ }
+				eatToken(TokenType::COMMA);
+				constName = eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				constVal = eatToken(TokenType::CHARCON);
+				checkPush(symbolTable.push(Symbol::SymbolItem(
+					constName.val, Symbol::CONST, Symbol::CHAR, constVal.val)));
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<常量定义>");
+	}
+
+	//＜整数＞ ::= [＋|－]＜无符号整数＞
+	inline tuple<bool, token> Parser2::integer() {
+		token intTok;
+		bool is_sucess = true;
+		switch (lookToken()) {
+		case TokenType::INTCON:
+			intTok = unsignedInt();
+			break;
+		case TokenType::PLUS:
+			eatToken(TokenType::PLUS);
+			intTok = unsignedInt();
+			break;
+		case TokenType::MINU:
+			eatToken(TokenType::MINU);
+			intTok = unsignedInt();
+			intTok.val = "-" + intTok.val;
+			break;
+		default:
+			is_sucess = false;
+			error(Error::OTHERS);
+			break;
+		}
+		output("<整数>");
+		return make_tuple(is_sucess, intTok);
+	}
+
+	//＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0 := INTCON
+	inline token Parser2::unsignedInt() {
+		token intTok;
+		switch (lookToken()) {
+		case TokenType::INTCON:
+			if (tok.val[0] == '0' && tok.val != "0") {
+				error(Error::LEX_ERROR);
+			}
+			intTok = eatToken(TokenType::INTCON);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<无符号整数>");
+		return intTok;
+	}
+
+	//＜变量说明＞  :: = ＜变量定义＞; {＜变量定义＞;}
+	//一到多个{＜变量定义＞;}
+	inline void Parser2::varDec() {
+		bool hasVarDef = false;
+		while (true) {
+			switch (lookToken()) {
+			case TokenType::IDENFR:
+				goto VARDEFEND;
+			case TokenType::INTTK:
+			case TokenType::CHARTK:
+				switch (lookToken(2)) {
+				case TokenType::SEMICN:
+				case TokenType::COMMA:
+				case TokenType::LBRACK:
+					if (!hasVarDef) {
+						hasVarDef = true;
+					}
+					varDef();
+					eatToken(TokenType::SEMICN);
+					break;
+				case TokenType::LPARENT:
+					goto VARDEFEND;
+				default:
+					error(Error::OTHERS);
+					break;
+				}
+				break;
+			case TokenType::VOIDTK:
+			case TokenType::IFTK:
+			case TokenType::DOTK:
+			case TokenType::WHILETK:
+			case TokenType::FORTK:
+			case TokenType::SCANFTK:
+			case TokenType::PRINTFTK:
+			case TokenType::RETURNTK:
+			case TokenType::SEMICN:
+			case TokenType::LBRACE:
+			case TokenType::RBRACE:
+				goto VARDEFEND;;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+		}
+	VARDEFEND:
+		if (hasVarDef) {
+			output("<变量说明>");
+		}
+
+	}
+
+	//＜变量定义＞  :: = ＜类型标识符＞ <变量名> { , <变量名> }
+	inline void Parser2::varDef() {
+		Symbol::SymbolType stype;
+		token ident;
+		token lenToken;
+		switch (lookToken()) {
+		case TokenType::INTTK:
+		case TokenType::CHARTK:
+			stype = tokenType2SymbolType(tokType);
+			eatToken(tokType); //eat ＜类型标识符＞
+			// varDefName(); 原<变量名>函数展开了	
+			switch (lookToken()) {
+			case TokenType::IDENFR:
+				ident = eatToken(TokenType::IDENFR);
+				switch (lookToken()) {
+				case TokenType::SEMICN:
+				case TokenType::COMMA:
+					checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::VAR, stype)));
+					if (symbolTable.getScope() == -1) {
+						midCodes.defineGlobalInt(ident.val);
+					}
+					break;
+				case TokenType::LBRACK:
+					// 数组定义
+					eatToken(TokenType::LBRACK);
+					lenToken = unsignedInt();
+					if (lenToken.val == "0") {
+						error(Error::LEX_ERROR);
+					}
+					eatToken(TokenType::RBRACK);
+					checkPush(symbolTable.push(Symbol::SymbolItem(
+						ident.val, Symbol::ARRAY, stype, atoi(lenToken.val.c_str()))));
+					if (symbolTable.getScope() == -1) { //全局数组定义
+						midCodes.defineGlobalIntArray(ident.val, stoi(lenToken.val));
+					}
+					break;
+				default:
+					error(Error::OTHERS);
+					break;
+				}
+				// if (lookToken() == LBRACK) {
+				// 	//'['＜无符号整数＞']'
+				// 	eatToken(LBRACK);
+				// 	len = unsignedInt();
+				// 	eatToken(RBRACK);
+				// }
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+			
+			while (lookToken() == TokenType::COMMA) {
+				//{ , <变量名> }
+				eatToken(TokenType::COMMA);
+				// varDefName();
+				switch (lookToken()) {
+				case TokenType::IDENFR:
+					ident = eatToken(TokenType::IDENFR);
+					switch (lookToken()) {
+					case TokenType::SEMICN:
+					case TokenType::COMMA:
+						checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::VAR, stype)));
+						if(symbolTable.getScope() == -1) {
+							midCodes.defineGlobalInt(ident.val);
+						}
+						break;
+					case TokenType::LBRACK:
+						eatToken(TokenType::LBRACK);
+						lenToken = unsignedInt();
+						error(Error::OTHERS);
+						eatToken(TokenType::RBRACK);
+						checkPush(symbolTable.push(Symbol::SymbolItem(
+							ident.val, Symbol::ARRAY, stype, atoi(lenToken.val.c_str()))));
+						if (symbolTable.getScope() == -1) { //ARRAY DEFINE
+							midCodes.defineGlobalIntArray(ident.val, stoi(lenToken.val));
+						}
+						break;
+					default:
+						error(Error::OTHERS);
+						break;
+					}
+					break;
+				default:
+					error(Error::OTHERS);
+					break;
+				}
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		// if (symbolTable.getScope() > 0) {
+		// 	midCodes.openStackVarsSpace(symbolTable.getStackScopeBytes() - 4*para_num);
+		// }
+		output("<变量定义>");
+	}
+
+	//<变量名> ::= (＜标识符＞ | ＜标识符＞'['＜无符号整数＞']')
+	//TODO 未用到
+	inline void Parser2::varDefName() {
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+			eatToken(TokenType::IDENFR);
+			if (lookToken() == TokenType::LBRACK) {
+				//'['＜无符号整数＞']'
+				eatToken(TokenType::LBRACK);
+				unsignedInt();
+				eatToken(TokenType::RBRACK);
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	}
+
+	Symbol::SymbolType funcDefType;
+	int funcRetCnt;
+	
+	//<函数定义> ::= ＜有返回值函数定义＞|＜无返回值函数定义＞
+	inline void Parser2::funcDef() {
+		while (true) {
+			funcRetCnt = 0;
+			switch (lookToken()) {
+			case TokenType::INTTK:
+			case TokenType::CHARTK:
+				funcDefType = tokenType2SymbolType(tokType);
+				retfuncDef();
+				if(funcRetCnt == 0) {
+					error(Error::ERROR_RETURN_IN_RETFUNC);
+				}
+				break;
+			case TokenType::VOIDTK:
+				switch (lookToken(1)) {
+				case TokenType::IDENFR:
+					funcDefType = Symbol::VOID;
+					nonRetfuncDef();
+					break;
+				case TokenType::MAINTK:
+					return; //跳出循环
+				default:
+					error(Error::OTHERS);
+					break;
+				}
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+			midCodes.addReturnInstr();
+		}
+	}
+
+	//＜有返回值函数定义＞  :: = ＜声明头部＞'('＜参数表＞')' '{'＜复合语句＞'}'
+	inline void Parser2::retfuncDef() {
+		Symbol::SymbolType stype;
+		token ident;
+		vector<Symbol::SymbolItem> para_list;
+		switch (lookToken()) {
+		case TokenType::INTTK:
+		case TokenType::CHARTK:
+			stype = tokenType2SymbolType(tokType);
+			// ＜声明头部＞
+			ident = headDec();
+			midCodes.defineFunc(ident.val);
+			// '('＜参数表＞')'
+			eatToken(TokenType::LPARENT);
+			para_list = paraList();
+			para_num = para_list.size();
+			eatToken(TokenType::RPARENT);
+			checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::FUNC, stype,
+				SymbolItemList2SymbolTypeList(para_list))));
+			symbolTable.pushScope();
+			for (int i = 0; i < para_list.size(); i++) {
+				checkPush(symbolTable.push(para_list[i]));
+			}
+			// '{'＜复合语句＞'}'
+			eatToken(TokenType::LBRACE);
+			compStatement();
+			eatToken(TokenType::RBRACE);
+			
+			midCodes.popStack(symbolTable.getStackScopeBytes());
+			symbolTable.clearScopeOffset();
+			symbolTable.popScope();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<有返回值函数定义>");
+	}
+
+	//＜无返回值函数定义＞  :: = void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
+	inline void Parser2::nonRetfuncDef() {
+		token ident;
+		vector<Symbol::SymbolItem> para_list;
+		switch (lookToken()) {
+		case TokenType::VOIDTK:
+			eatToken(TokenType::VOIDTK);
+			// funcRetMap.insert(pair<string, bool>(tok.val, false));
+			addFuncName(false);
+			ident = eatToken(TokenType::IDENFR);
+			midCodes.defineFunc(ident.val);
+			//'('＜参数表＞')'
+			eatToken(TokenType::LPARENT);
+			para_list = paraList();
+			para_num = para_list.size();
+			eatToken(TokenType::RPARENT);
+			checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::FUNC, Symbol::VOID, SymbolItemList2SymbolTypeList(para_list))));
+			symbolTable.pushScope();
+			for (int i = 0; i < para_list.size(); i++) {
+				checkPush(symbolTable.push(para_list[i]));
+			}
+			//'{'＜复合语句＞'}'
+			eatToken(TokenType::LBRACE);
+			compStatement();
+			eatToken(TokenType::RBRACE);
+			
+			midCodes.popStack(symbolTable.getStackScopeBytes());
+			symbolTable.clearScopeOffset();
+			symbolTable.popScope();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<无返回值函数定义>");
+	}
+
+	// ＜声明头部＞ ::=  int＜标识符＞ |char＜标识符＞
+	// 返回<标识符>token,用于symbol ident
+	inline token Parser2::headDec() {
+		token t;
+		switch (lookToken()) {
+		case TokenType::INTTK:
+			eatToken(TokenType::INTTK);
+			// funcRetMap.insert(pair<string, bool>(tok.val, true));
+			addFuncName(true);
+			t = eatToken(TokenType::IDENFR);
+			break;
+		case TokenType::CHARTK:
+			eatToken(TokenType::CHARTK);
+			// funcRetMap.insert(pair<string, bool>(tok.val, true));
+			addFuncName(true);
+			t = eatToken(TokenType::IDENFR);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<声明头部>");
+		return t;
+	}
+
+	//＜参数表＞ ::=  ＜类型标识符＞＜标识符＞{,＜类型标识符＞＜标识符＞}| ＜空＞
+	inline vector<Symbol::SymbolItem> Parser2::paraList() {
+		vector<Symbol::SymbolItem> para_list;
+		Symbol::SymbolType stype;
+		token ident;
+		switch (lookToken()) {
+		case TokenType::INTTK:
+		case TokenType::CHARTK:
+			stype = tokenType2SymbolType(tokType);
+			identType();
+			ident = eatToken(TokenType::IDENFR);
+			para_list.push_back(Symbol::SymbolItem(ident.val, Symbol::PARA, stype));
+			break;
+		case TokenType::RPARENT:
+			break; //为空由此跳出，去输出
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		while (lookToken() == TokenType::COMMA) {
+			// {, ＜类型标识符＞＜标识符＞}
+			eatToken(TokenType::COMMA);
+			switch (lookToken()) {
+			case TokenType::INTTK:
+			case TokenType::CHARTK:
+				stype = tokenType2SymbolType(tokType);
+				identType();
+				ident = eatToken(TokenType::IDENFR);
+				break;
+			case TokenType::RPARENT:
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+			para_list.push_back(Symbol::SymbolItem(ident.val, Symbol::PARA, stype));
+		}
+		output("<参数表>");
+		return para_list;
+	}
+
+	//＜类型标识符＞ ::=  int | char
+	inline void Parser2::identType() {
+		switch (lookToken()) {
+		case TokenType::INTTK:
+			eatToken(TokenType::INTTK);
+			break;
+		case TokenType::CHARTK:
+			eatToken(TokenType::CHARTK);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	}
+
+	//＜复合语句＞ ::= ［＜常量说明＞］［＜变量说明＞］＜语句列＞
+	inline void Parser2::compStatement() {
+		constDec();
+		varDec();
+		// if (symbolTable.getScope() == 0) {
+		// 	//main 函数，且无全局定义
+		// 	midCodes.openStackVarsSpace(symbolTable.getStackScopeBytes());
+		// } else 
+		if (symbolTable.getScope() > 0) {
+			midCodes.openStackSpace(symbolTable.getStackScopeBytes() - 4*para_num);
+		}
+		pushRegToStack("$ra");
+		statementBlock();
+		midCodes.newBlock(midCodes.getReturnLabel());
+		popRegFromStack("$ra");
+		output("<复合语句>");
+	}
+
+	//＜语句列＞ ::= ｛＜语句＞｝
+	inline void Parser2::statementBlock() {
+		while (true) {
+			switch (lookToken()) {
+			case TokenType::IDENFR:
+			case TokenType::IFTK:
+			case TokenType::DOTK:
+			case TokenType::WHILETK:
+			case TokenType::FORTK:
+			case TokenType::SCANFTK:
+			case TokenType::PRINTFTK:
+			case TokenType::RETURNTK:
+			case TokenType::SEMICN:
+			case TokenType::LBRACE:
+				statement();
+				break;
+			case TokenType::RBRACE: // 从 '}' 跳出
+				goto EndStatBlock;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+		}
+	EndStatBlock:
+		output("<语句列>");
+	}
+
+	// ＜语句＞ :: = ＜条件语句＞｜＜循环语句＞ | '{'＜语句列＞'}' | ＜有返回值函数调用语句 ＞;
+	// | ＜无返回值函数调用语句＞;｜＜赋值语句＞;｜＜读语句＞;｜＜写语句＞;｜＜空＞; | ＜返回语句＞;
+	inline void Parser2::statement() {
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+			switch (lookToken(1)) {
+			case TokenType::LPARENT: //函数调用语句
+				funcCallStatement();
+				eatToken(TokenType::SEMICN);
+				break;
+			case TokenType::ASSIGN: //赋值语句
+			case TokenType::LBRACK: //数组a[i]的赋值语句
+				assignStat();
+				eatToken(TokenType::SEMICN);
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+			break;
+		case TokenType::IFTK: //条件语句
+			condStatement();
+			break;
+		case TokenType::DOTK: //循环语句do...while
+			cycleStatement();
+			break;
+		case TokenType::WHILETK: //循环语句while
+			cycleStatement();
+			break;
+		case TokenType::FORTK: //循环语句for
+			cycleStatement();
+			break;
+		case TokenType::SCANFTK: //读语句
+			readStatement();
+			eatToken(TokenType::SEMICN);
+			break;
+		case TokenType::PRINTFTK: //写语句
+			writeStatement();
+			eatToken(TokenType::SEMICN);
+			break;
+		case TokenType::RETURNTK: //返回语句
+			retStatement();
+			eatToken(TokenType::SEMICN);
+			break;
+		case TokenType::SEMICN: //空语句
+			eatToken(TokenType::SEMICN);
+			break;
+		case TokenType::LBRACE: //语句块
+			eatToken(TokenType::LBRACE);
+			statementBlock();
+			eatToken(TokenType::RBRACE);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<语句>");
+	}
+
+	//＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
+	inline void Parser2::funcCallStatement() {
+		bool ret = true;
+		token ident;
+		Symbol::SymbolItem symbol;
+		bool find;
+		vector<Symbol::SymbolType> inputParaTypeList, exceptedParaTypeList;
+		pushRegPool();
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+			ret = funcRetMap[tok.val];
+			ident = eatToken(TokenType::IDENFR);
+			tie(find, symbol) = symbolTable.findSymbol(ident.val);
+			checkFind(find);
+			eatToken(TokenType::LPARENT);
+			exceptedParaTypeList = symbol.getParaTypeList();
+			inputParaTypeList = funcCallInputParaList(exceptedParaTypeList);
+			if(inputParaTypeList.size()!= exceptedParaTypeList.size()) {
+				error(Error::MISMATCHING_OF_PARANUM);
+			}
+			symbolTable.subScopeOffset(inputParaTypeList.size() * 4);	//参数退栈！！！
+			eatToken(TokenType::RPARENT);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		midCodes.callInstr(ident.val);
+		popRegPool();
+		//区分有返回值函数调用语句和无返回值函数调用语句
+		if (ret) {
+			output("<有返回值函数调用语句>");
+		} else {
+			output("<无返回值函数调用语句>");
+		}
+	}
+
+	// ＜值参数表＞ ::= ＜表达式＞{,＜表达式＞}｜＜空＞
+	inline vector<Symbol::SymbolType> Parser2::funcCallInputParaList(vector<Symbol::SymbolType> expectedParaTypeList) {
+		Symbol::SymbolType exprType;
+		vector<Symbol::SymbolType> inputParaTypeList;
+		int count = 0;
+		string expr_ans_reg;
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+		case TokenType::INTCON:
+		case TokenType::CHARCON:
+		case TokenType::PLUS:
+		case TokenType::MINU:
+		case TokenType::LPARENT:
+			midCodes.exprStart();
+			tie(exprType, expr_ans_reg) = expr();
+			pushRegToStack(expr_ans_reg);
+			if(expectedParaTypeList.size() > count && expectedParaTypeList[count++] != exprType) {
+				error(Error::MISMATCHING_OF_PARATYPE);
+			}
+			inputParaTypeList.push_back(exprType);
+			while (lookToken() == TokenType::COMMA) {
+				//{,＜表达式＞}
+				eatToken(TokenType::COMMA);
+				midCodes.exprStart();
+				tie(exprType, expr_ans_reg) = expr();
+				pushRegToStack(expr_ans_reg);
+				if (expectedParaTypeList.size() > count && expectedParaTypeList[count++] != exprType) {
+					error(Error::MISMATCHING_OF_PARATYPE);
+				}
+				inputParaTypeList.push_back(exprType);
+			}
+			break;
+		case TokenType::RPARENT:
+			break; //()值参数表为空，跳出去输出
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<值参数表>");
+		return inputParaTypeList;
+	}
+
+	//＜赋值语句＞ ::= ＜标识符＞＝＜表达式＞|＜标识符＞'['＜表达式＞']'=＜表达式＞
+	inline void Parser2::assignStat() {
+		token ident,arr_token;
+		Symbol::SymbolItem symbol;
+		Symbol::SymbolType exprType;
+		bool find;
+		string expr_ans_reg,arr_expr_reg;
+		bool isArray = false;
+		string addr;
+		
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+			ident = eatToken(TokenType::IDENFR);
+			tie(find, symbol) = symbolTable.findSymbol(ident.val);
+			checkFind(find); //检查标识符是否定义
+			if (symbol.isConst()) {
+				//改变常量的值
+				error(Error::CHANGE_VAL_OF_CONST);
+			}
+			// assign to array
+			if (lookToken() == TokenType::LBRACK) {
+				//'['＜表达式＞']'
+				eatToken(TokenType::LBRACK);
+				midCodes.exprStart();
+				tie(exprType, arr_expr_reg) = expr();
+				if (exprType != Symbol::INT) {
+					//数组元素的下标只能是整型表达式
+					error(Error::ERROR_TYPE_OF_ARRAY_INDEX);
+				}
+				eatToken(TokenType::RBRACK);
+				isArray = true;
+			}
+			eatToken(TokenType::ASSIGN);
+			midCodes.exprStart();
+			tie(std::ignore, expr_ans_reg) = expr();
+			
+			if(isArray) {
+				addr = getArrAddr(ident.val, arr_expr_reg);
+				midCodes.addInstr({ MidCode::MidInstr::SAVE_STA_ARR, expr_ans_reg, addr });
+			} else {
+				assignToIdent(expr_ans_reg, ident.val);
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<赋值语句>");
+	}
+
+	//＜表达式＞ ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞} 
+	inline tuple<Symbol::SymbolType, string> Parser2::expr() {
+		Symbol::SymbolType exprType = Symbol::SymbolType::INT;
+		token ident;
+		Symbol::SymbolItem symbol;
+		bool find;
+		bool first = true;
+		bool noProOp = true;
+		while (true) {
+			switch (lookToken()) {
+			case TokenType::PLUS:
+			case TokenType::MINU:
+				if (first) {
+					if(lookToken()== TokenType::MINU) {
+						midCodes.pushExprOp(MidCode::ExprOp::NEG);
+					}
+					eatToken(tokType);
+					noProOp = false;
+				}
+			case TokenType::IDENFR:
+			case TokenType::INTCON:
+			case TokenType::CHARCON:
+			case TokenType::LPARENT:
+				if (first && noProOp) {
+					if (lookToken() == TokenType::IDENFR) {
+						tie(find, symbol) = symbolTable.findSymbol(tok.val);
+						checkFind(find);
+						if (symbol.isChar()) {
+							exprType = Symbol::CHAR;
+						}
+					} else if (lookToken() == TokenType::CHARCON) {
+						exprType = Symbol::CHAR;
+					}
+				}
+				if (!first) {
+					exprType = Symbol::INT;
+					token opToken = plusOp();
+					if(opToken.type == TokenType::PLUS) {
+						midCodes.pushExprOp(MidCode::ExprOp::PLUS);
+					} else if (opToken.type == TokenType::MINU) {
+						midCodes.pushExprOp(MidCode::ExprOp::MINUS);
+					}
+				}
+				term();
+				if (first) {
+					first = false;
+				}
+				break;
+				//FOLLOW集合
+			case TokenType::LSS:
+			case TokenType::LEQ:
+			case TokenType::GEQ:
+			case TokenType::GRE:
+			case TokenType::EQL:
+			case TokenType::NEQ:
+			case TokenType::SEMICN:
+			case TokenType::COMMA:
+			case TokenType::RPARENT:
+			case TokenType::RBRACK:
+				if (!first) {
+					goto EndExpr;
+				}
+			default:
+				error(Error::OTHERS);
+				goto EndExpr;			//TODO handle error, try change
+				break;
+			}
+		}
+	EndExpr:
+		output("<表达式>");
+		return make_tuple(exprType, midCodes.genExprVal());
+	}
+
+	//＜项＞ :: = ＜因子＞{ ＜乘法运算符＞＜因子＞ }
+	inline void Parser2::term() {
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+		case TokenType::INTCON:
+		case TokenType::CHARCON:
+		case TokenType::PLUS:
+		case TokenType::MINU:
+		case TokenType::LPARENT:
+			factor();
+			while (isMulOp(lookToken())) {
+				//{ ＜乘法运算符＞＜因子＞ }
+				mulOp();
+				factor();
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<项>");
+	}
+
+	//＜因子＞ ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'|'('＜表达式＞')'
+	//				｜＜整数＞|＜字符＞｜＜有返回值函数调用语句＞
+	inline void Parser2::factor() {
+		Symbol::SymbolType expr_type;
+		string expr_val;
+		token ident, intToken, char_token;
+		string addr;
+		
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+			switch (lookToken(1)) {
+			case TokenType::LPARENT: //＜有返回值函数调用语句＞
+				funcCallStatement();
+				midCodes.exprPushObj_ImmInt("$v0");
+				break;
+			case TokenType::LBRACK:
+			case TokenType::LEQ:
+			case TokenType::NEQ:
+			case TokenType::RPARENT:
+			case TokenType::EQL:
+			case TokenType::LSS:
+			case TokenType::MINU:
+			case TokenType::GEQ:
+			case TokenType::COMMA:
+			case TokenType::GRE:
+			case TokenType::MULT:
+			case TokenType::DIV:
+			case TokenType::PLUS:
+			case TokenType::RBRACK:
+			case TokenType::SEMICN:
+			doident:
+				ident = eatToken(TokenType::IDENFR); //＜标识符＞｜＜标识符＞'['＜表达式＞']'
+				if (lookToken() == TokenType::LBRACK) {
+					eatToken(TokenType::LBRACK);
+					midCodes.exprStart();
+					tie(expr_type, expr_val) = expr();
+					if(expr_type!=Symbol::INT) {
+						//数组元素的下标只能是整型表达式
+						error(Error::ERROR_TYPE_OF_ARRAY_INDEX);
+					}
+					eatToken(TokenType::RBRACK);
+					
+					addr = getArrAddr(ident.val, expr_val);
+					midCodes.exprPushObj_StackArr(addr);
+					goto facotr_end;
+				}
+				exprPushIdent(ident);	//非数组 执行push ident
+				break;
+			default:
+				error(Error::OTHERS);
+				goto doident;	// TODO handle error, try change
+				break;
+			}
+			break;
+		case TokenType::CHARCON: //＜字符＞
+			char_token = eatToken(TokenType::CHARCON);
+			midCodes.exprPushObj_ImmInt(int(char_token.val[0]));
+			break;
+		case TokenType::INTCON:
+		case TokenType::PLUS:
+		case TokenType::MINU: //<整数>
+			tie(std::ignore, intToken) = integer();
+			midCodes.exprPushObj_ImmInt(intToken.val);
+			break;
+		case TokenType::LPARENT: //'('＜表达式＞')'
+			eatToken(TokenType::LPARENT);
+			midCodes.pushExprOp(MidCode::ExprOp::PARE_L);
+			midCodes.exprStart();
+			tie(expr_type, expr_val) = expr();
+			midCodes.exprPushObj_ImmInt(expr_val);
+			eatToken(TokenType::RPARENT);
+			midCodes.pushExprOp(MidCode::ExprOp::PARE_R);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		facotr_end:
+		output("<因子>");
+	}
+
+	//＜条件语句＞ ::= if '('＜条件＞')'＜语句＞［else＜语句＞］
+	inline void Parser2::condStatement() {
+		switch (lookToken()) {
+		case TokenType::IFTK:
+			midCodes.defineIf();
+			eatToken(TokenType::IFTK);
+			midCodes.newBlock(midCodes.getIfName());
+			eatToken(TokenType::LPARENT);
+			condition(); //＜条件＞
+			eatToken(TokenType::RPARENT);
+			midCodes.newBlock(midCodes.getIfThenName());
+			statement(); //语句
+			midCodes.jumpInstr(midCodes.getIfEndName());
+			midCodes.newBlock(midCodes.getIfElseName());
+			elseCondStat(); //else语句,一定进入else，但else可能是空，即不存在else
+			midCodes.newBlock(midCodes.getIfEndName());
+			midCodes.endDefine();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<条件语句>");
+	}
+
+	//<else语句> ::= else＜语句＞
+	inline void Parser2::elseCondStat() {
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+		case TokenType::IFTK:
+			return;
+		case TokenType::ELSETK:
+			eatToken(TokenType::ELSETK);
+			statement();
+			break;
+		case TokenType::DOTK:
+		case TokenType::WHILETK:
+		case TokenType::FORTK:
+		case TokenType::SCANFTK:
+		case TokenType::PRINTFTK:
+		case TokenType::RETURNTK:
+		case TokenType::SEMICN:
+		case TokenType::LBRACE:
+		case TokenType::RBRACE:
+			return;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	}
+
+	//＜条件＞ ::=  ＜表达式＞＜关系运算符＞＜表达式＞｜＜表达式＞
+	inline void Parser2::condition() {
+		Symbol::SymbolType lexprType;
+		Symbol::SymbolType rexprType;
+		string lexprVal, rexprVal;
+		token cmpToken;
+		
+		switch (lookToken()) {
+		case TokenType::IDENFR:
+		case TokenType::INTCON:
+		case TokenType::CHARCON:
+		case TokenType::PLUS:
+		case TokenType::MINU:
+		case TokenType::LPARENT:
+			midCodes.exprStart();
+			tie(lexprType, lexprVal) = expr();
+			if(lexprType != Symbol::INT) {
+				error(Error::ILLEGAL_TYPE_IN_CONDITION);
+			}
+			// 判断有无 逻辑运算符 
+			switch (lookToken()) {
+				//＜关系运算符＞＜表达式＞
+			case TokenType::LSS:
+			case TokenType::LEQ:
+			case TokenType::GEQ:
+			case TokenType::GRE:
+			case TokenType::EQL:
+			case TokenType::NEQ:
+				cmpToken = relationalOp();
+				midCodes.exprStart();
+				tie(rexprType, rexprVal) = expr();
+				if (rexprType != Symbol::INT) {
+					error(Error::ILLEGAL_TYPE_IN_CONDITION);
+				}
+				midCodes.genBranch(cmpToken.type,lexprVal,rexprVal);
+				break;
+			case TokenType::SEMICN:
+			case TokenType::RPARENT:
+				goto EndCondition;
+			default:
+				midCodes.addInstr({MidCode::MidInstr::BLEZ,lexprVal,midCodes.getCondJmpLoc()});
+				error(Error::OTHERS);
+				break;
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	EndCondition:
+		output("<条件>");
+	}
+
+	// ＜循环语句＞   :: = while '('＜条件＞')'＜语句＞ | do＜语句＞while '('＜条件＞')'
+	// | for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+| -)＜步长＞')'＜语句＞
+	inline void Parser2::cycleStatement() {
+		token for_init_token;
+		string for_init_val_reg;
+		token step_ident_token;
+		token step_op_token;
+		token step_val_token;
+		
+		switch (lookToken()) {
+		case TokenType::DOTK: //do＜语句＞while '('＜条件＞')'
+			midCodes.defineDoWhile();
+			midCodes.newBlock(midCodes.getDoWhileName());
+			eatToken(TokenType::DOTK);
+			statement();
+			if(lookToken()!= TokenType::WHILETK) {
+				error(Error::MISS_WHILE_IN_DO_WHILE_STAT);
+			}
+			eatToken(TokenType::WHILETK);
+			eatToken(TokenType::LPARENT);
+			condition();
+			eatToken(TokenType::RPARENT);
+			midCodes.jumpInstr(midCodes.getDoWhileName());
+			midCodes.newBlock(midCodes.getDoWhileEndName());
+			midCodes.endDefine();
+			break;
+		case TokenType::WHILETK: //while '('＜条件＞')'＜语句＞
+			midCodes.defineWhile();
+			midCodes.newBlock(midCodes.getWhileName());
+			eatToken(TokenType::WHILETK);
+			eatToken(TokenType::LPARENT);
+			condition();
+			eatToken(TokenType::RPARENT);
+			statement();
+			midCodes.jumpInstr(midCodes.getWhileName());
+			midCodes.newBlock(midCodes.getWhileEndName());
+			midCodes.endDefine();
+			break;
+		case TokenType::FORTK: //for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+| -)＜步长＞')'＜语句＞
+			midCodes.defineFor();
+			eatToken(TokenType::FORTK);
+			eatToken(TokenType::LPARENT);
+			// ＜标识符＞＝＜表达式＞
+			for_init_token = eatToken(TokenType::IDENFR);
+			eatToken(TokenType::ASSIGN);
+			midCodes.exprStart();
+			tie(std::ignore, for_init_val_reg) = expr();
+			assignToIdent(for_init_val_reg,for_init_token.val);
+			eatToken(TokenType::SEMICN);
+			// ＜条件＞
+			midCodes.newBlock(midCodes.getForStartName());
+			condition();
+			//＜标识符＞＝＜标识符＞(+| -)＜步长＞
+			eatToken(TokenType::SEMICN);
+			eatToken(TokenType::IDENFR);
+			eatToken(TokenType::ASSIGN);
+			step_ident_token = eatToken(TokenType::IDENFR);
+			step_op_token = plusOp();
+			step_val_token = step();
+			eatToken(TokenType::RPARENT);
+			
+			midCodes.newBlock(midCodes.getForBodyName());
+			statement();
+
+			midCodes.exprStart();
+			exprPushIdent(step_ident_token);
+			if(step_op_token.type==TokenType::PLUS) {
+				midCodes.pushExprOp(MidCode::ExprOp::PLUS);
+			} else {
+				midCodes.pushExprOp(MidCode::ExprOp::MINUS);
+			}
+			midCodes.exprPushObj_ImmInt(step_val_token.val);
+			assignToIdent(midCodes.genExprVal(), step_ident_token.val);
+
+			midCodes.jumpInstr(midCodes.getForStartName());
+			midCodes.newBlock(midCodes.getForEndName());
+			midCodes.endDefine();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<循环语句>");
+	}
+
+	//＜步长＞::= ＜无符号整数＞ 
+	inline token Parser2::step() {
+		token step;
+		switch (lookToken()) {
+		case TokenType::INTCON:
+			step = unsignedInt();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<步长>");
+		return step;
+	}
+
+	vector<token> scanfIdentList;
+	
+	//＜读语句＞    :: = scanf '('＜标识符＞{ ,＜标识符＞ }')'
+	inline void Parser2::readStatement() {
+		token ident;
+		// int scope;	//no use
+		Symbol::SymbolItem symbol;
+		
+		switch (lookToken()) {
+		case TokenType::SCANFTK:
+			eatToken(TokenType::SCANFTK);
+			eatToken(TokenType::LPARENT);
+			scanfIdentList.clear();
+			ident = eatToken(TokenType::IDENFR);
+			scanfIdentList.push_back(ident);
+			while (lookToken() == TokenType::COMMA) {
+				//{ ,＜标识符＞ }
+				eatToken(TokenType::COMMA);
+				ident = eatToken(TokenType::IDENFR);
+				scanfIdentList.push_back(ident);
+			}
+			
+			for (int i = 0; i < scanfIdentList.size(); i++) { 
+				tie(std::ignore, symbol) = symbolTable.findSymbolAndScope(scanfIdentList[i].val);
+				scanf2midInstr(symbol);
+			}
+			
+			eatToken(TokenType::RPARENT);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<读语句>");
+	}
+
+	//＜写语句＞    ::= printf '(' ＜字符串＞,＜表达式＞ ')'| printf '('＜字符串＞ ')'| printf '('＜表达式＞')'
+	inline void Parser2::writeStatement() {
+		switch (lookToken()) {
+		case TokenType::PRINTFTK:
+			eatToken(TokenType::PRINTFTK);
+			eatToken(TokenType::LPARENT);
+			writeStatContent();
+			eatToken(TokenType::RPARENT);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		midCodes.printLineInstr();
+		output("<写语句>");
+	}
+
+	//<写语句内容> ::= ＜字符串＞,＜表达式＞  | ＜字符串＞ | ＜表达式＞
+	inline void Parser2::writeStatContent() {
+		string str;
+		string str_lable;
+		Symbol::SymbolType expr_type;
+		string expr_ans_reg;
+		//TODO print expr
+		switch (lookToken()) {
+		case TokenType::STRCON:
+			str = strConst(); //＜字符串＞
+			str_lable = midCodes.defineConstStr(str);
+			midCodes.printStrInstr(str_lable);
+			if (lookToken() == TokenType::COMMA) {
+				//,＜表达式＞
+				eatToken(TokenType::COMMA);
+				midCodes.exprStart();
+				tie(expr_type, expr_ans_reg) = expr(); //＜表达式＞
+				if(expr_type==Symbol::INT) {
+					midCodes.addInstr({ MidCode::MidInstr::PRINT_INT, expr_ans_reg });
+				} else {
+					midCodes.addInstr({ MidCode::MidInstr::PRINT_CHAR, expr_ans_reg });
+				}
+			}
+			break;
+		case TokenType::IDENFR:
+		case TokenType::INTCON:
+		case TokenType::CHARCON:
+		case TokenType::PLUS:
+		case TokenType::MINU:
+		case TokenType::LPARENT:
+			midCodes.exprStart();
+			tie(expr_type, expr_ans_reg) = expr(); //＜表达式＞
+			if (expr_type == Symbol::INT) {
+				midCodes.addInstr({ MidCode::MidInstr::PRINT_INT, expr_ans_reg });
+			}
+			else {
+				midCodes.addInstr({ MidCode::MidInstr::PRINT_CHAR, expr_ans_reg });
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	}
+
+	//＜返回语句＞ ::=  return['('＜表达式＞')']  
+	inline void Parser2::retStatement() {
+		Symbol::SymbolType expr_type;
+		string expr_val_reg;
+		switch (lookToken()) {
+		case TokenType::RETURNTK:
+			eatToken(TokenType::RETURNTK);
+			switch (lookToken()) {
+			case TokenType::SEMICN:
+				if (funcDefType != Symbol::VOID) {
+					error(Error::ERROR_RETURN_IN_RETFUNC);
+				}
+				midCodes.jumpInstr(midCodes.getReturnLabel());
+				break;
+			case TokenType::LPARENT:
+				//'('＜表达式＞')']
+				eatToken(TokenType::LPARENT);
+				midCodes.exprStart();
+				tie(expr_type, expr_val_reg) = expr();
+				midCodes.moveReg("$v0", expr_val_reg);
+				midCodes.jumpInstr(midCodes.getReturnLabel());
+				if(funcDefType== Symbol::INT  && expr_type != Symbol::INT) {
+					error(Error::ERROR_RETURN_IN_RETFUNC);
+				}
+				if (funcDefType == Symbol::CHAR && expr_type != Symbol::CHAR) {
+					error(Error::ERROR_RETURN_IN_RETFUNC);
+				}
+				if (funcDefType == Symbol::VOID) {
+					error(Error::ERROR_RETURN_IN_NONRETFUNC);
+				}
+				eatToken(TokenType::RPARENT);
+				funcRetCnt++;
+				break;
+			default:
+				error(Error::OTHERS);
+				break;
+			}
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<返回语句>");
+	}
+
+	//＜主函数＞ ::= void main‘(’‘)’ ‘{’＜复合语句＞‘}’
+	inline void Parser2::mainFunc() {
+		switch (lookToken()) {
+		case TokenType::VOIDTK:
+			funcDefType = Symbol::VOID;
+			eatToken(TokenType::VOIDTK);
+			eatToken(TokenType::MAINTK);
+			eatToken(TokenType::LPARENT);
+			eatToken(TokenType::RPARENT);
+			eatToken(TokenType::LBRACE);
+			midCodes.defineFunc("main");
+			symbolTable.pushScope();
+			para_num = 0;
+			compStatement();
+			eatToken(TokenType::RBRACE);
+			symbolTable.popScope();
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<主函数>");
+	}
+
+	inline void Parser2::addFuncName(bool ret) {
+		lookToken();
+		funcRetMap.insert(pair<string, bool>(tok.val, ret));
+	}
+
+	//＜加法运算符＞ ::= +｜-
+	inline token Parser2::plusOp() {
+		token t;
+		switch (lookToken()) {
+		case TokenType::PLUS:
+			t = eatToken(TokenType::PLUS);
+			break;
+		case TokenType::MINU:
+			t = eatToken(TokenType::MINU);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		return t;
+	}
+
+	//＜乘法运算符＞  ::= *｜/
+	inline void Parser2::mulOp() {
+		switch (lookToken()) {
+		case TokenType::MULT:
+			eatToken(TokenType::MULT);
+			midCodes.pushExprOp(MidCode::ExprOp::MULT);
+			break;
+		case TokenType::DIV:
+			eatToken(TokenType::DIV);
+			midCodes.pushExprOp(MidCode::ExprOp::DIV);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+	}
+
+	inline bool Parser2::isMulOp(TokenType::tokenType type) {
+		return type == TokenType::MULT || type == TokenType::DIV;
+	}
+
+	//＜关系运算符＞  ::=  <｜<=｜>｜>=｜!=｜==
+	inline token Parser2::relationalOp() {
+		token cmpToken;
+		switch (lookToken()) {
+		case TokenType::LSS:
+			cmpToken = eatToken(TokenType::LSS);
+			break;
+		case TokenType::LEQ:
+			cmpToken = eatToken(TokenType::LEQ);
+			break;
+		case TokenType::GEQ:
+			cmpToken = eatToken(TokenType::GEQ);
+			break;
+		case TokenType::GRE:
+			cmpToken = eatToken(TokenType::GRE);
+			break;
+		case TokenType::EQL:
+			cmpToken = eatToken(TokenType::EQL);
+			break;
+		case TokenType::NEQ:
+			cmpToken = eatToken(TokenType::NEQ);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		return cmpToken;
+	}
+
+	//字符串常量
+	inline string Parser2::strConst() {
+		token strTok;
+		switch (lookToken()) {
+		case TokenType::STRCON:
+			strTok = eatToken(TokenType::STRCON);
+			break;
+		default:
+			error(Error::OTHERS);
+			break;
+		}
+		output("<字符串>");
+		return strTok.val;
+	}
 
 	inline void Parser2::error(Error::errorType eType) {
 		err.errorHandle(tokenToError(eType));
@@ -98,31 +1541,13 @@ namespace Parser2 {
 		if (eType == Error::ERROR_TYPE_TO_CONST) {
 			eatToken(lookToken());
 		}
-		//TODO
+		//TODO skip
 		// vector<tokenType> skipList = Error::ErrorSkipSet[eType];
 		// tokenType temp = lookToken();
 		// while (checkFind(skipList.begin(), skipList.end(), temp) == skipList.end()) {
 		// 	eatToken(temp);
 		// 	temp = lookToken();
 		// }
-	}
-
-	inline Symbol::SymbolType Parser2::tokenType2SymbolType(tokenType tType) {
-		if (tType == INTTK) {
-			return Symbol::INT;
-		} else if (tType == CHARTK) {
-			return Symbol::CHAR;
-		} else {
-			//TODO error
-		}
-	}
-
-	inline vector<Symbol::SymbolType> Parser2::SymbolItemList2SymbolTypeList(vector<Symbol::SymbolItem> paraList) {
-		std::vector<Symbol::SymbolType> symbolTypeList;
-		for (int i = 0; i < paraList.size(); i++) {
-			symbolTypeList.push_back(paraList[i].getType());
-		}
-		return symbolTypeList;
 	}
 
 	inline void Parser2::checkPush(bool push) {
@@ -137,1231 +1562,110 @@ namespace Parser2 {
 		}
 	}
 
-	inline tokenType Parser2::lookToken(int preN) {
-		while (tokQueue.size() <= preN) {
-			token t = lexer.getToken(preN);
-			if(t.val!="") {
-				tokQueue.push_back(t);
-			} else {
-				lexer.eatToken();
-			}
+	inline Symbol::SymbolType Parser2::tokenType2SymbolType(TokenType::tokenType tType) {
+		if (tType == TokenType::INTTK) {
+			return Symbol::INT;
 		}
-		tok = tokQueue[preN];
-		tokType = tok.type;
-		if(preN == 0) {
-			tokLine = tok.line;
+		else if (tType == TokenType::CHARTK) {
+			return Symbol::CHAR;
 		}
-		return tokType;
+		else {
+			//error
+			return Symbol::VOID;
+		}
 	}
 
-	inline token Parser2::eatToken(tokenType type) {
-		token temp;
-		if (tokQueue.empty()) {
-			tokQueue.push_back(lexer.getToken());
+	inline vector<Symbol::SymbolType> Parser2::SymbolItemList2SymbolTypeList(vector<Symbol::SymbolItem> paraList) {
+		std::vector<Symbol::SymbolType> symbolTypeList;
+		for (int i = 0; i < paraList.size(); i++) {
+			symbolTypeList.push_back(paraList[i].getType());
 		}
-		if ((temp = tokQueue.front()).type == type) {
-			tokQueue.pop_front();
-			lexer.eatToken();
-			curLine = tokLine;
-			//lookToken(); //可去除
+		return symbolTypeList;
+	}
+
+	inline void Parser2::pushRegToStack(string reg_name) {
+		midCodes.pushRegInstr(reg_name);
+		symbolTable.addScopeOffset(4);
+	}
+
+	inline void Parser2::popRegFromStack(string reg_name) {
+		midCodes.popRegInstr(reg_name);
+		symbolTable.subScopeOffset(4);
+	}
+
+	inline void Parser2::assignToIdent(string ans_reg, string ident) {
+		if (symbolTable.checkSymbolIsGlobal(ident)) {
+			midCodes.addInstr(
+				{ MidCode::MidInstr::SAVE_LABEL, ans_reg, midCodes.getGlobalVarLabel(ident) });
+		}
+		else {
+			midCodes.addInstr(
+				{ MidCode::MidInstr::SAVE_STACK, ans_reg, symbolTable.getStackOffsetBytesByIdent(ident) });
+		}
+	}
+
+	inline void Parser2::exprPushIdent(token token) {
+		if(symbolTable.checkSymbolIsConst(token.val)) {
+			if (symbolTable.checkSymbolIsChar(token.val)) {
+				midCodes.exprPushObj_ImmInt(int(symbolTable.getConstSymbolValue(token.val)[0]));
+			}
+			else {
+				midCodes.exprPushObj_ImmInt(symbolTable.getConstSymbolValue(token.val));
+			}
+		} else if (symbolTable.checkSymbolIsGlobal(token.val)) {
+			midCodes.exprPushObj_GlobalVar(token.val);
 		} else {
-			switch (type) {
-			case SEMICN:
-				error(Error::MISS_SEMICN);
-				break;
-			case RPARENT:
-				error(Error::MISS_RPARENT);
-				break;
-			case RBRACK:
-				error(Error::MISS_RBRACK);
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-		}
-		fout << temp.toString() << endl;
-		return temp;
-	}
-
-	//＜程序＞::= ［＜常量说明＞］［＜变量说明＞］{<函数定义>}＜主函数＞
-	inline void Parser2::program() {
-		switch (lookToken()) {
-		case CONSTTK:
-		case INTTK:
-		case CHARTK:
-		case VOIDTK:
-			constDec();
-			varDec();
-			funcDef();
-			mainFunc();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<程序>" << endl;
-		err.errorPrint();
-	}
-
-	//＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}	
-	inline void Parser2::constDec() {
-		bool hasConstDec = false;
-		while (lookToken() == CONSTTK) {
-			eatToken(CONSTTK);
-			constDef();
-			eatToken(SEMICN);
-			if (!hasConstDec) {
-				hasConstDec = true;
-			}
-		}
-		if (hasConstDec) {
-			fout << "<常量说明>" << endl;
+			midCodes.exprPushObj_StackVar(token.val, symbolTable.getStackOffsetBytesByIdent(token.val));
 		}
 	}
 
-	// ＜常量定义＞ ::= int＜标识符＞＝＜整数＞{,＜标识符＞＝＜整数＞} | char＜标识符＞＝＜字符＞{ ,＜标识符＞＝＜字符＞ }
-	inline void Parser2::constDef() {
-		token constName;
-		token constVal;
-		bool check;
-		switch (lookToken()) {
-		case INTTK:
-			eatToken(INTTK);
-			constName = eatToken(IDENFR);
-			eatToken(ASSIGN);
-			tie(check,constVal) = integer();
-			if(check==false) {
-				error(Error::ERROR_TYPE_TO_CONST);
+	inline void Parser2::scanf2midInstr(Symbol::SymbolItem symbol)  {
+		if (symbol.isGlobal) {
+			if (symbol.getType() == Symbol::SymbolType::INT) {
+				midCodes.addInstr({ MidCode::MidInstr::SCAN_GLOBAL_INT,midCodes.getGlobalVarLabel(symbol.getName()) });
 			}
-			checkPush(symbolTable.push(Symbol::SymbolItem(
-				constName.val, Symbol::CONST, Symbol::INT, constVal.val)));
-			while (lookToken() == COMMA) {
-				//{,＜标识符＞＝＜整数＞}
-				eatToken(COMMA);
-				constName = eatToken(IDENFR);
-				eatToken(ASSIGN);
-				tie(check, constVal) = integer();
-				if (check == false) {
-					error(Error::ERROR_TYPE_TO_CONST);
-				}
-				checkPush(symbolTable.push(Symbol::SymbolItem(
-					constName.val, Symbol::CONST, Symbol::INT, constVal.val)));
+			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
+				midCodes.addInstr({ MidCode::MidInstr::SCAN_GLOBAL_CHAR,midCodes.getGlobalVarLabel(symbol.getName()) });
 			}
-			break;
-		case CHARTK:
-			eatToken(CHARTK);
-			constName = eatToken(IDENFR);
-			eatToken(ASSIGN);
-			if(lookToken()!=CHARCON) {
-				error(Error::ERROR_TYPE_TO_CONST);
+		} else {
+			if (symbol.getType() == Symbol::SymbolType::INT) {
+				midCodes.addInstr({ MidCode::MidInstr::SCAN_INT,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
 			}
-			constVal = eatToken(CHARCON);
-			checkPush(symbolTable.push(Symbol::SymbolItem(
-				constName.val, Symbol::CONST, Symbol::CHAR, constVal.val)));
-			while (lookToken() == COMMA) {
-				//{ ,＜标识符＞＝＜字符＞ }
-				eatToken(COMMA);
-				constName = eatToken(IDENFR);
-				eatToken(ASSIGN);
-				constVal = eatToken(CHARCON);
-				checkPush(symbolTable.push(Symbol::SymbolItem(
-					constName.val, Symbol::CONST, Symbol::CHAR, constVal.val)));
+			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
+				midCodes.addInstr({ MidCode::MidInstr::SCAN_CHAR,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
 			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<常量定义>" << endl;
-	}
-
-	//＜整数＞ ::= [＋|－]＜无符号整数＞
-	inline tuple<bool, token> Parser2::integer() {
-		token intTok;
-		bool is_sucess = true;
-		switch (lookToken()) {
-		case INTCON:
-			intTok = unsignedInt();
-			break;
-		case PLUS:
-			eatToken(PLUS);
-			intTok = unsignedInt();
-			break;
-		case MINU:
-			eatToken(MINU);
-			intTok = unsignedInt();
-			intTok.val = "-" + intTok.val;
-			break;
-		default:
-			is_sucess = false;
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<整数>" << endl;
-		return make_tuple(is_sucess, intTok);
-	}
-
-	//＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0 := INTCON
-	inline token Parser2::unsignedInt() {
-		token intTok;
-		switch (lookToken()) {
-		case INTCON:
-			if (tok.val[0] == '0' && tok.val != "0") {
-				error(Error::LEX_ERROR);
-			}
-			intTok = eatToken(INTCON);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<无符号整数>" << endl;
-		return intTok;
-	}
-
-	//＜变量说明＞  :: = ＜变量定义＞; {＜变量定义＞;}
-	//一到多个{＜变量定义＞;}
-	inline void Parser2::varDec() {
-		bool hasVarDef = false;
-		while (true) {
-			switch (lookToken()) {
-			case IDENFR:
-				goto VARDEFEND;
-			case INTTK:
-			case CHARTK:
-				switch (lookToken(2)) {
-				case SEMICN:
-				case COMMA:
-				case LBRACK:
-					if (!hasVarDef) {
-						hasVarDef = true;
-					}
-					varDef();
-					eatToken(SEMICN);
-					break;
-				case LPARENT:
-					goto VARDEFEND;
-				default:
-					error(Error::OTHERS);
-					break;
-				}
-				break;
-			case VOIDTK:
-			case IFTK:
-			case DOTK:
-			case WHILETK:
-			case FORTK:
-			case SCANFTK:
-			case PRINTFTK:
-			case RETURNTK:
-			case SEMICN:
-			case LBRACE:
-			case RBRACE:
-				goto VARDEFEND;;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-		}
-	VARDEFEND:
-		if (hasVarDef) {
-			fout << "<变量说明>" << endl;
-		}
-
-	}
-
-	//＜变量定义＞  :: = ＜类型标识符＞ <变量名> { , <变量名> }
-	inline void Parser2::varDef() {
-		Symbol::SymbolType stype;
-		token ident;
-		token len;
-		switch (lookToken()) {
-		case INTTK:
-		case CHARTK:
-			stype = tokenType2SymbolType(tokType);
-			eatToken(tokType); //eat ＜类型标识符＞
-			// varDefName(); //<变量名>
-			switch (lookToken()) {
-			case IDENFR:
-				ident = eatToken(IDENFR);
-				switch (lookToken()) {
-				case SEMICN:
-				case COMMA:
-					checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::ARRAY, stype)));
-					break;
-				case LBRACK:
-					eatToken(LBRACK);
-					len = unsignedInt();
-					if (len.val == "0") {
-						error(Error::LEX_ERROR);
-					}
-					eatToken(RBRACK);
-					checkPush(symbolTable.push(Symbol::SymbolItem(
-						ident.val, Symbol::ARRAY, stype, atoi(len.val.c_str()))));
-					break;
-				default:
-					error(Error::OTHERS);
-					break;
-				}
-				// if (lookToken() == LBRACK) {
-				// 	//'['＜无符号整数＞']'
-				// 	eatToken(LBRACK);
-				// 	len = unsignedInt();
-				// 	eatToken(RBRACK);
-				// }
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-			while (lookToken() == COMMA) {
-				//{ , <变量名> }
-				eatToken(COMMA);
-				// varDefName();
-				switch (lookToken()) {
-				case IDENFR:
-					ident = eatToken(IDENFR);
-					switch (lookToken()) {
-					case SEMICN:
-					case COMMA:
-						checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::ARRAY, stype)));
-						break;
-					case LBRACK:
-						eatToken(LBRACK);
-						len = unsignedInt();
-						error(Error::OTHERS);
-						eatToken(RBRACK);
-						checkPush(symbolTable.push(Symbol::SymbolItem(
-							ident.val, Symbol::ARRAY, stype, atoi(len.val.c_str()))));
-						break;
-					default:
-						error(Error::OTHERS);
-						break;
-					}
-					// if (lookToken() == LBRACK) {
-					// 	//'['＜无符号整数＞']'
-					// 	eatToken(LBRACK);
-					// 	len = unsignedInt();
-					// 	eatToken(RBRACK);
-					// }
-					break;
-				default:
-					error(Error::OTHERS);
-					break;
-				}
-			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<变量定义>" << endl;
-	}
-
-	//<变量名> ::= (＜标识符＞ | ＜标识符＞'['＜无符号整数＞']')
-	//TODO 未用到
-	inline void Parser2::varDefName() {
-		switch (lookToken()) {
-		case IDENFR:
-			eatToken(IDENFR);
-			if (lookToken() == LBRACK) {
-				//'['＜无符号整数＞']'
-				eatToken(LBRACK);
-				unsignedInt();
-				eatToken(RBRACK);
-			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
 		}
 	}
-
-	Symbol::SymbolType funcDefType;
-	int funcRetCnt;
 	
-	//<函数定义> ::= ＜有返回值函数定义＞|＜无返回值函数定义＞
-	inline void Parser2::funcDef() {
-		while (true) {
-			funcRetCnt = 0;
-			switch (lookToken()) {
-			case INTTK:
-			case CHARTK:
-				funcDefType = tokenType2SymbolType(tokType);
-				retfuncDef();
-				if(funcRetCnt == 0) {
-					error(Error::ERROR_RETURN_IN_RETFUNC);
-				}
-				break;
-			case VOIDTK:
-				switch (lookToken(1)) {
-				case IDENFR:
-					funcDefType = Symbol::VOID;
-					nonRetfuncDef();
-					break;
-				case MAINTK:
-					return; //跳出循环
-				default:
-					error(Error::OTHERS);
-					break;
-				}
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
+	inline void Parser2::pushRegPool() {
+		for (int i = 0; i <= POOLSIZE; i++) {
+			midCodes.addInstr({MidCode::MidInstr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+			pushRegToStack("$k0");
 		}
 	}
 
-	//＜有返回值函数定义＞  :: = ＜声明头部＞'('＜参数表＞')' '{'＜复合语句＞'}'
-	inline void Parser2::retfuncDef() {
-		Symbol::SymbolType stype;
-		token ident;
-		vector<Symbol::SymbolItem> para_list;
-		switch (lookToken()) {
-		case INTTK:
-		case CHARTK:
-			stype = tokenType2SymbolType(tokType);
-			// ＜声明头部＞
-			ident = headDec();
-			// '('＜参数表＞')'
-			eatToken(LPARENT);
-			para_list = paraList();
-			eatToken(RPARENT);
-			checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::FUNC, stype,
-				SymbolItemList2SymbolTypeList(para_list))));
-			symbolTable.pushScope();
-			for (int i = 0; i < para_list.size(); i++) {
-				checkPush(symbolTable.push(para_list[i]));
-			}
-			// '{'＜复合语句＞'}'
-			eatToken(LBRACE);
-			compStatement();
-			eatToken(RBRACE);
-			symbolTable.popScope();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<有返回值函数定义>" << endl;
-	}
-
-	//＜无返回值函数定义＞  :: = void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
-	inline void Parser2::nonRetfuncDef() {
-		token ident;
-		vector<Symbol::SymbolItem> para_list;
-		switch (lookToken()) {
-		case VOIDTK:
-			eatToken(VOIDTK);
-			// funcRetMap.insert(pair<string, bool>(tok.val, false));
-			addFuncName(false);
-			ident = eatToken(IDENFR);
-			//'('＜参数表＞')'
-			eatToken(LPARENT);
-			para_list = paraList();
-			eatToken(RPARENT);
-			checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::FUNC, Symbol::VOID, SymbolItemList2SymbolTypeList(para_list))));
-			symbolTable.pushScope();
-			for (int i = 0; i < para_list.size(); i++) {
-				checkPush(symbolTable.push(para_list[i]));
-			}
-			//'{'＜复合语句＞'}'
-			eatToken(LBRACE);
-			compStatement();
-			eatToken(RBRACE);
-			symbolTable.popScope();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<无返回值函数定义>" << endl;
-	}
-
-	// ＜声明头部＞ ::=  int＜标识符＞ |char＜标识符＞
-	// 返回<标识符>token,用于symbol ident
-	inline token Parser2::headDec() {
-		token t;
-		switch (lookToken()) {
-		case INTTK:
-			eatToken(INTTK);
-			// funcRetMap.insert(pair<string, bool>(tok.val, true));
-			addFuncName(true);
-			t = eatToken(IDENFR);
-			break;
-		case CHARTK:
-			eatToken(CHARTK);
-			// funcRetMap.insert(pair<string, bool>(tok.val, true));
-			addFuncName(true);
-			t = eatToken(IDENFR);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<声明头部>" << endl;
-		return t;
-	}
-
-	//＜参数表＞ ::=  ＜类型标识符＞＜标识符＞{,＜类型标识符＞＜标识符＞}| ＜空＞
-	inline vector<Symbol::SymbolItem> Parser2::paraList() {
-		vector<Symbol::SymbolItem> para_list;
-		Symbol::SymbolType stype;
-		token ident;
-		switch (lookToken()) {
-		case INTTK:
-		case CHARTK:
-			stype = tokenType2SymbolType(tokType);
-			identType();
-			ident = eatToken(IDENFR);
-			para_list.push_back(Symbol::SymbolItem(ident.val, Symbol::PARA, stype));
-			break;
-		case RPARENT:
-			break; //为空由此跳出，去输出
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		while (lookToken() == COMMA) {
-			// {, ＜类型标识符＞＜标识符＞}
-			eatToken(COMMA);
-			switch (lookToken()) {
-			case INTTK:
-			case CHARTK:
-				stype = tokenType2SymbolType(tokType);
-				identType();
-				ident = eatToken(IDENFR);
-				break;
-			case RPARENT:
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-			para_list.push_back(Symbol::SymbolItem(ident.val, Symbol::PARA, stype));
-		}
-		fout << "<参数表>" << endl;
-		return para_list;
-	}
-
-	//＜类型标识符＞ ::=  int | char
-	inline void Parser2::identType() {
-		switch (lookToken()) {
-		case INTTK:
-			eatToken(INTTK);
-			break;
-		case CHARTK:
-			eatToken(CHARTK);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
+	inline void Parser2::popRegPool() {
+		for (int i = POOLSIZE; i >= 0; i--) {
+			popRegFromStack("$k0");
+			midCodes.addInstr({MidCode::MidInstr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
 		}
 	}
 
-	//＜复合语句＞ ::= ［＜常量说明＞］［＜变量说明＞］＜语句列＞
-	inline void Parser2::compStatement() {
-		constDec();
-		varDec();
-		statementBlock();
-		fout << "<复合语句>" << endl;
-	}
-
-	//＜语句列＞ ::= ｛＜语句＞｝
-	inline void Parser2::statementBlock() {
-		while (true) {
-			switch (lookToken()) {
-			case IDENFR:
-			case IFTK:
-			case DOTK:
-			case WHILETK:
-			case FORTK:
-			case SCANFTK:
-			case PRINTFTK:
-			case RETURNTK:
-			case SEMICN:
-			case LBRACE:
-				statement();
-				break;
-			case RBRACE: // 从 '}' 跳出
-				goto EndStatBlock;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
+	inline string Parser2::getArrAddr(string arr_name, string expr_val) {
+		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k1", "$0", expr_val });
+		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$0", "4" });
+		midCodes.addInstr({ MidCode::MidInstr::MUL, "$k1", "$k1", "$k0" });
+		if (symbolTable.checkSymbolIsGlobal(arr_name)) {
+			midCodes.addInstr({ MidCode::MidInstr::LOAD_ADDR, "$k0", midCodes.getGlobalArrLabel(arr_name) });
 		}
-	EndStatBlock:
-		fout << "<语句列>" << endl;
-	}
-
-	// ＜语句＞ :: = ＜条件语句＞｜＜循环语句＞ | '{'＜语句列＞'}' | ＜有返回值函数调用语句 ＞;
-	// | ＜无返回值函数调用语句＞;｜＜赋值语句＞;｜＜读语句＞;｜＜写语句＞;｜＜空＞; | ＜返回语句＞;
-	inline void Parser2::statement() {
-		switch (lookToken()) {
-		case IDENFR:
-			switch (lookToken(1)) {
-			case LPARENT: //函数调用语句
-				funcCallStatement();
-				eatToken(SEMICN);
-				break;
-			case ASSIGN: //赋值语句
-			case LBRACK: //数组a[i]的赋值语句
-				assignStat();
-				eatToken(SEMICN);
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-			break;
-		case IFTK: //条件语句
-			condStatement();
-			break;
-		case DOTK: //循环语句do...while
-			cycleStatement();
-			break;
-		case WHILETK: //循环语句while
-			cycleStatement();
-			break;
-		case FORTK: //循环语句for
-			cycleStatement();
-			break;
-		case SCANFTK: //读语句
-			readStatement();
-			eatToken(SEMICN);
-			break;
-		case PRINTFTK: //写语句
-			writeStatement();
-			eatToken(SEMICN);
-			break;
-		case RETURNTK: //返回语句
-			retStatement();
-			eatToken(SEMICN);
-			break;
-		case SEMICN: //空语句
-			eatToken(SEMICN);
-			break;
-		case LBRACE: //语句块
-			eatToken(LBRACE);
-			statementBlock();
-			eatToken(RBRACE);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
+		else {
+			midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$0", symbolTable.getStackOffsetBytesByIdent(arr_name) });
+			midCodes.addInstr({ MidCode::MidInstr::SUB, "$k0", "$k0", "$k1" });
+			midCodes.addInstr({ MidCode::MidInstr::ADD, "$k1", "$0", "$sp" });
 		}
-		fout << "<语句>" << endl;
-	}
+		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$k0", "$k1" });
 
-	//＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
-	inline void Parser2::funcCallStatement() {
-		bool ret = true;
-		token ident;
-		Symbol::SymbolItem symbol;
-		bool find;
-		vector<Symbol::SymbolType> inputParaTypeList, exceptedParaTypeList;
-		switch (lookToken()) {
-		case IDENFR:
-			ret = funcRetMap[tok.val];
-			ident = eatToken(IDENFR);
-			tie(find, symbol) = symbolTable.findSymbol(ident.val);
-			checkFind(find);
-			eatToken(LPARENT);
-			exceptedParaTypeList = symbol.getParaTypeList();
-			inputParaTypeList = funcCallInputParaList(exceptedParaTypeList);
-			if(inputParaTypeList.size()!= exceptedParaTypeList.size()) {
-				error(Error::MISMATCHING_OF_PARANUM);
-			}
-			eatToken(RPARENT);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		//区分有返回值函数调用语句和无返回值函数调用语句
-		if (ret) {
-			fout << "<有返回值函数调用语句>" << endl;
-		} else {
-			fout << "<无返回值函数调用语句>" << endl;
-		}
-	}
-
-	// ＜值参数表＞ ::= ＜表达式＞{,＜表达式＞}｜＜空＞
-	inline vector<Symbol::SymbolType> Parser2::funcCallInputParaList(vector<Symbol::SymbolType> expectedParaTypeList) {
-		Symbol::SymbolType exprType;
-		vector<Symbol::SymbolType> inputParaTypeList;
-		int count = 0;
-		switch (lookToken()) {
-		case IDENFR:
-		case INTCON:
-		case CHARCON:
-		case PLUS:
-		case MINU:
-		case LPARENT:
-			exprType = expr();
-			if(expectedParaTypeList.size() > count && expectedParaTypeList[count++] != exprType) {
-				error(Error::MISMATCHING_OF_PARATYPE);
-			}
-			inputParaTypeList.push_back(exprType);
-			while (lookToken() == COMMA) {
-				//{,＜表达式＞}
-				eatToken(COMMA);
-				exprType = expr();
-				if (expectedParaTypeList.size() > count && expectedParaTypeList[count++] != exprType) {
-					error(Error::MISMATCHING_OF_PARATYPE);
-				}
-				inputParaTypeList.push_back(exprType);
-			}
-			break;
-		case RPARENT:
-			break; //()值参数表为空，跳出去输出
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<值参数表>" << endl;
-		return inputParaTypeList;
-	}
-
-	//＜赋值语句＞ ::= ＜标识符＞＝＜表达式＞|＜标识符＞'['＜表达式＞']'=＜表达式＞
-	inline void Parser2::assignStat() {
-		token ident;
-		Symbol::SymbolItem symbol;
-		Symbol::SymbolType exprType;
-		bool find;
-		switch (lookToken()) {
-		case IDENFR:
-			ident = eatToken(IDENFR);
-			tie(find, symbol) = symbolTable.findSymbol(ident.val);
-			checkFind(find); //检查标识符是否定义
-			if (symbol.isConst()) {
-				//改变常量的值
-				error(Error::CHANGE_VAL_OF_CONST);
-			}
-			if (lookToken() == LBRACK) {
-				//'['＜表达式＞']'
-				eatToken(LBRACK);
-				exprType = expr();
-				if (exprType != Symbol::INT) {
-					//数组元素的下标只能是整型表达式
-					error(Error::ERROR_TYPE_OF_ARRAY_INDEX);
-				}
-				eatToken(RBRACK);
-			}
-			eatToken(ASSIGN);
-			expr();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<赋值语句>" << endl;
-	}
-
-	//＜表达式＞ ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞} 
-	inline Symbol::SymbolType Parser2::expr() {
-		//TODO 改进
-		Symbol::SymbolType exprType = Symbol::SymbolType::INT;
-		token ident;
-		Symbol::SymbolItem symbol;
-		bool find;
-		bool first = true;
-		bool noProOp = true;
-		while (true) {
-			switch (lookToken()) {
-			case PLUS:
-			case MINU:
-				if (first) {
-					eatToken(tokType);
-					noProOp = false;
-				}
-			case IDENFR:
-			case INTCON:
-			case CHARCON:
-			case LPARENT:
-				if (first && noProOp) {
-					if (lookToken() == IDENFR) {
-						tie(find, symbol) = symbolTable.findSymbol(tok.val);
-						checkFind(find);
-						if (symbol.isChar()) {
-							exprType = Symbol::CHAR;
-						}
-					} else if (lookToken() == CHARCON) {
-						exprType = Symbol::CHAR;
-					}
-				}
-				if (!first) {
-					exprType = Symbol::INT;
-					plusOp();
-				}
-				term();
-				if (first) {
-					first = false;
-				}
-				break;
-				//FOLLOW集合
-			case LSS:
-			case LEQ:
-			case GEQ:
-			case GRE:
-			case EQL:
-			case NEQ:
-			case SEMICN:
-			case COMMA:
-			case RPARENT:
-			case RBRACK:
-				if (!first) {
-					goto EndExpr;
-				}
-			default:
-				error(Error::OTHERS);
-				goto EndExpr;			//TODO try change
-				break;
-			}
-		}
-	EndExpr:
-		fout << "<表达式>" << endl;
-		return exprType;
-	}
-
-	//＜项＞ :: = ＜因子＞{ ＜乘法运算符＞＜因子＞ }
-	inline void Parser2::term() {
-		switch (lookToken()) {
-		case IDENFR:
-		case INTCON:
-		case CHARCON:
-		case PLUS:
-		case MINU:
-		case LPARENT:
-			factor();
-			while (isMulOp(lookToken())) {
-				//{ ＜乘法运算符＞＜因子＞ }
-				mulOp();
-				factor();
-			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<项>" << endl;
-	}
-
-	//＜因子＞ ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'|'('＜表达式＞')'
-	//				｜＜整数＞|＜字符＞｜＜有返回值函数调用语句＞
-	inline void Parser2::factor() {
-		Symbol::SymbolType exprType;
-		switch (lookToken()) {
-		case IDENFR:
-			switch (lookToken(1)) {
-			case LPARENT: //＜有返回值函数调用语句＞
-				funcCallStatement();
-				break;
-			case LBRACK:
-			case LEQ:
-			case NEQ:
-			case RPARENT:
-			case EQL:
-			case LSS:
-			case MINU:
-			case GEQ:
-			case COMMA:
-			case GRE:
-			case MULT:
-			case DIV:
-			case PLUS:
-			case RBRACK:
-			case SEMICN:
-			doident:
-				eatToken(IDENFR); //＜标识符＞｜＜标识符＞'['＜表达式＞']'
-				if (lookToken() == LBRACK) {
-					eatToken(LBRACK);
-					exprType = expr();
-					if(exprType!=Symbol::INT) {
-						//数组元素的下标只能是整型表达式
-						error(Error::ERROR_TYPE_OF_ARRAY_INDEX);
-					}
-					eatToken(RBRACK);
-				}
-				break;
-			default:
-				error(Error::OTHERS);
-				goto doident;	//TODO try change
-				break;
-			}
-			break;
-		case CHARCON: //＜字符＞
-			eatToken(CHARCON);
-			break;
-		case INTCON:
-		case PLUS:
-		case MINU: //<整数>
-			integer();
-			break;
-		case LPARENT: //'('＜表达式＞')'
-			eatToken(LPARENT);
-			expr();
-			eatToken(RPARENT);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<因子>" << endl;
-	}
-
-	//＜条件语句＞ ::= if '('＜条件＞')'＜语句＞［else＜语句＞］
-	inline void Parser2::condStatement() {
-		switch (lookToken()) {
-		case IFTK:
-			eatToken(IFTK);
-			eatToken(LPARENT);
-			condition(); //＜条件＞
-			eatToken(RPARENT);
-			statement(); //语句
-			elseCondStat(); //else语句,一定进入else，但else可能是空，即不存在else
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<条件语句>" << endl;
-	}
-
-	//<else语句> ::= else＜语句＞
-	inline void Parser2::elseCondStat() {
-		switch (lookToken()) {
-		case IDENFR:
-		case IFTK:
-			return;
-		case ELSETK:
-			eatToken(ELSETK);
-			statement();
-			break;
-		case DOTK:
-		case WHILETK:
-		case FORTK:
-		case SCANFTK:
-		case PRINTFTK:
-		case RETURNTK:
-		case SEMICN:
-		case LBRACE:
-		case RBRACE:
-			return;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	}
-
-	//＜条件＞ ::=  ＜表达式＞＜关系运算符＞＜表达式＞｜＜表达式＞
-	inline void Parser2::condition() {
-		Symbol::SymbolType lexprType;
-		Symbol::SymbolType rexprType;
-		switch (lookToken()) {
-		case IDENFR:
-		case INTCON:
-		case CHARCON:
-		case PLUS:
-		case MINU:
-		case LPARENT:
-			lexprType = expr();
-			if(lexprType != Symbol::INT) {
-				error(Error::ILLEGAL_TYPE_IN_CONDITION);
-			}
-			// 判断有无 逻辑运算符 
-			switch (lookToken()) {
-				//＜关系运算符＞＜表达式＞
-			case LSS:
-			case LEQ:
-			case GEQ:
-			case GRE:
-			case EQL:
-			case NEQ:
-				relationalOp();
-				rexprType = expr();
-				if (rexprType != Symbol::INT) {
-					error(Error::ILLEGAL_TYPE_IN_CONDITION);
-				}
-				break;
-			case SEMICN:
-			case RPARENT:
-				goto EndCondition;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	EndCondition:
-		fout << "<条件>" << endl;
-	}
-
-	// ＜循环语句＞   :: = while '('＜条件＞')'＜语句＞ | do＜语句＞while '('＜条件＞')'
-	// | for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+| -)＜步长＞')'＜语句＞
-	inline void Parser2::cycleStatement() {
-		switch (lookToken()) {
-		case DOTK: //do＜语句＞while '('＜条件＞')'
-			eatToken(DOTK);
-			statement();
-			if(lookToken()!=WHILETK) {
-				error(Error::MISS_WHILE_IN_DO_WHILE_STAT);
-			}
-			eatToken(WHILETK);
-			eatToken(LPARENT);
-			condition();
-			eatToken(RPARENT);
-			break;
-		case WHILETK: //while '('＜条件＞')'＜语句＞
-			eatToken(WHILETK);
-			eatToken(LPARENT);
-			condition();
-			eatToken(RPARENT);
-			statement();
-			break;
-		case FORTK: //for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+| -)＜步长＞')'＜语句＞
-			eatToken(FORTK);
-			eatToken(LPARENT);
-			eatToken(IDENFR);
-			eatToken(ASSIGN);
-			expr();
-			eatToken(SEMICN);
-			condition();
-			eatToken(SEMICN);
-			eatToken(IDENFR);
-			eatToken(ASSIGN);
-			eatToken(IDENFR);
-			plusOp();
-			step();
-			eatToken(RPARENT);
-			statement();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<循环语句>" << endl;
-	}
-
-	//＜步长＞::= ＜无符号整数＞ 
-	inline void Parser2::step() {
-		switch (lookToken()) {
-		case INTCON:
-			unsignedInt();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<步长>" << endl;
-	}
-
-	//＜读语句＞    :: = scanf '('＜标识符＞{ ,＜标识符＞ }')'
-	inline void Parser2::readStatement() {
-		switch (lookToken()) {
-		case SCANFTK:
-			eatToken(SCANFTK);
-			eatToken(LPARENT);
-			eatToken(IDENFR);
-			while (lookToken() == COMMA) {
-				//{ ,＜标识符＞ }
-				eatToken(COMMA);
-				eatToken(IDENFR);
-			}
-			eatToken(RPARENT);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<读语句>" << endl;
-	}
-
-	//＜写语句＞    ::= printf '(' ＜字符串＞,＜表达式＞ ')'| printf '('＜字符串＞ ')'| printf '('＜表达式＞')'
-	inline void Parser2::writeStatement() {
-		switch (lookToken()) {
-		case PRINTFTK:
-			eatToken(PRINTFTK);
-			eatToken(LPARENT);
-			writeStatContent();
-			eatToken(RPARENT);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<写语句>" << endl;
-	}
-
-	//<写语句内容> ::= ＜字符串＞,＜表达式＞  | ＜字符串＞ | ＜表达式＞
-	inline void Parser2::writeStatContent() {
-		switch (lookToken()) {
-		case STRCON:
-			strConst(); //＜字符串＞
-			if (lookToken() == COMMA) {
-				//,＜表达式＞
-				eatToken(COMMA);
-				expr();
-			}
-			break;
-		case IDENFR:
-		case INTCON:
-		case CHARCON:
-		case PLUS:
-		case MINU:
-		case LPARENT:
-			expr(); //＜表达式＞
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	}
-
-	//＜返回语句＞ ::=  return['('＜表达式＞')']  
-	inline void Parser2::retStatement() {
-		Symbol::SymbolType exprType;
-		switch (lookToken()) {
-		case RETURNTK:
-			eatToken(RETURNTK);
-			switch (lookToken()) {
-			case SEMICN:
-				if (funcDefType != Symbol::VOID) {
-					error(Error::ERROR_RETURN_IN_RETFUNC);
-				}
-				break;
-			case LPARENT:
-				//'('＜表达式＞')'] 
-				eatToken(LPARENT);
-				exprType = expr();
-				if(funcDefType== Symbol::INT  && exprType!= Symbol::INT) {
-					error(Error::ERROR_RETURN_IN_RETFUNC);
-				}
-				if (funcDefType == Symbol::CHAR && exprType != Symbol::CHAR) {
-					error(Error::ERROR_RETURN_IN_RETFUNC);
-				}
-				if (funcDefType == Symbol::VOID) {
-					error(Error::ERROR_RETURN_IN_NONRETFUNC);
-				}
-				eatToken(RPARENT);
-				funcRetCnt++;
-				break;
-			default:
-				error(Error::OTHERS);
-				break;
-			}
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<返回语句>" << endl;
-	}
-
-	//＜主函数＞ ::= void main‘(’‘)’ ‘{’＜复合语句＞‘}’
-	inline void Parser2::mainFunc() {
-		switch (lookToken()) {
-		case VOIDTK:
-			funcDefType = Symbol::VOID;
-			eatToken(VOIDTK);
-			eatToken(MAINTK);
-			eatToken(LPARENT);
-			eatToken(RPARENT);
-			eatToken(LBRACE);
-			symbolTable.pushScope();
-			compStatement();
-			eatToken(RBRACE);
-			symbolTable.popScope();
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<主函数>" << endl;
-	}
-
-	inline void Parser2::addFuncName(bool ret) {
-		lookToken();
-		funcRetMap.insert(pair<string, bool>(tok.val, ret));
-	}
-
-	//＜加法运算符＞ ::= +｜-
-	inline void Parser2::plusOp() {
-		switch (lookToken()) {
-		case PLUS:
-			eatToken(PLUS);
-			break;
-		case MINU:
-			eatToken(MINU);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	}
-
-	//＜乘法运算符＞  ::= *｜/
-	inline void Parser2::mulOp() {
-		switch (lookToken()) {
-		case MULT:
-			eatToken(MULT);
-			break;
-		case DIV:
-			eatToken(DIV);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	}
-
-	inline bool Parser2::isMulOp(tokenType type) {
-		return type == MULT || type == DIV;
-	}
-
-	//＜关系运算符＞  ::=  <｜<=｜>｜>=｜!=｜==
-	inline void Parser2::relationalOp() {
-		switch (lookToken()) {
-		case LSS:
-			eatToken(LSS);
-			break;
-		case LEQ:
-			eatToken(LEQ);
-			break;
-		case GEQ:
-			eatToken(GEQ);
-			break;
-		case GRE:
-			eatToken(GRE);
-			break;
-		case EQL:
-			eatToken(EQL);
-			break;
-		case NEQ:
-			eatToken(NEQ);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-	}
-
-	//字符串常量
-	inline void Parser2::strConst() {
-		switch (lookToken()) {
-		case STRCON:
-			eatToken(STRCON);
-			break;
-		default:
-			error(Error::OTHERS);
-			break;
-		}
-		fout << "<字符串>" << endl;
+		return "$k0";
 	}
 
 }
