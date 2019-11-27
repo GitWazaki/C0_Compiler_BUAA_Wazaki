@@ -25,8 +25,8 @@ namespace MidCode {
 			// ±È½Ï
 			BEQ,	//==
 			BNE,	//!=
-			BGT,		//>
-			BGE,		//>=
+			BGT,		// >
+			BGE,		// >=
 			BLT,	//<
 			BLE,	//<=
 			BGEZ,	//>=0

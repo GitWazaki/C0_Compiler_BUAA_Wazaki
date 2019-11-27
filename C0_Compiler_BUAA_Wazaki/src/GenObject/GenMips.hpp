@@ -189,6 +189,7 @@ namespace GenObject {
 				if (NOT_ALLAC(source_a))
 					REGPOOL_LOAD(source_a, $t1);
 			case MidCode::MidInstr::BGEZ:
+			case MidCode::MidInstr::BLEZ:
 				if (NOT_ALLAC(target))
 					REGPOOL_LOAD(target, $t0);
 				break;

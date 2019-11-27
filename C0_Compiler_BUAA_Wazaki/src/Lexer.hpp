@@ -226,6 +226,9 @@ namespace Lexer {
 		while (ch != '\"') {
 			if (32 <= ch && ch <= 126 && ch != 34) {
 				catSym();
+				if(ch == '\\') {
+					sym += '\\';
+				}
 				getch();
 			} else {
 				//TODO ERROR

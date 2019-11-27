@@ -58,8 +58,8 @@ namespace Parser2 {
 		vector<Symbol::SymbolType>  funcCallInputParaList(vector<Symbol::SymbolType>); //值参数表
 		void assignStat(); //赋值语句
 		tuple<Symbol::SymbolType,string> expr(); //表达式
-		void term(); //项
-		void factor(); //因子
+		Symbol::SymbolType term(); //项
+		Symbol::SymbolType factor(); //因子
 		void condition(); //条件
 		void condStatement(); //条件语句
 		void elseCondStat(); //条件语句else部分
@@ -889,7 +889,7 @@ namespace Parser2 {
 
 	//＜表达式＞ ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞} 
 	inline tuple<Symbol::SymbolType, string> Parser2::expr() {
-		Symbol::SymbolType exprType = Symbol::SymbolType::INT;
+		Symbol::SymbolType exprType,termType;
 		token ident;
 		Symbol::SymbolItem symbol;
 		bool find;
@@ -910,17 +910,17 @@ namespace Parser2 {
 			case TokenType::INTCON:
 			case TokenType::CHARCON:
 			case TokenType::LPARENT:
-				if (first && noProOp) {
-					if (lookToken() == TokenType::IDENFR) {
-						tie(find, symbol) = symbolTable.findSymbol(tok.val);
-						checkFind(find);
-						if (symbol.isChar()) {
-							exprType = Symbol::CHAR;
-						}
-					} else if (lookToken() == TokenType::CHARCON) {
-						exprType = Symbol::CHAR;
-					}
-				}
+				// if (first && noProOp) {
+				// 	if (lookToken() == TokenType::IDENFR) {
+				// 		tie(find, symbol) = symbolTable.findSymbol(tok.val);
+				// 		checkFind(find);
+				// 		if (symbol.isChar()) {
+				// 			exprType = Symbol::CHAR;
+				// 		}
+				// 	} else if (lookToken() == TokenType::CHARCON) {
+				// 		exprType = Symbol::CHAR;
+				// 	}
+				// }
 				if (!first) {
 					exprType = Symbol::INT;
 					token opToken = plusOp();
@@ -930,8 +930,13 @@ namespace Parser2 {
 						midCodes.pushExprOp(MidCode::ExprOp::MINUS);
 					}
 				}
-				term();
+				termType = term();
 				if (first) {
+					if(noProOp) {
+						exprType = termType;
+					} else {
+						exprType = Symbol::INT;
+					}
 					first = false;
 				}
 				break;
@@ -961,7 +966,8 @@ namespace Parser2 {
 	}
 
 	//＜项＞ :: = ＜因子＞{ ＜乘法运算符＞＜因子＞ }
-	inline void Parser2::term() {
+	inline Symbol::SymbolType Parser2::term() {
+		Symbol::SymbolType term_type;
 		switch (lookToken()) {
 		case TokenType::IDENFR:
 		case TokenType::INTCON:
@@ -969,11 +975,12 @@ namespace Parser2 {
 		case TokenType::PLUS:
 		case TokenType::MINU:
 		case TokenType::LPARENT:
-			factor();
+			term_type = factor();
 			while (isMulOp(lookToken())) {
 				//{ ＜乘法运算符＞＜因子＞ }
 				mulOp();
 				factor();
+				term_type = Symbol::INT;
 			}
 			break;
 		default:
@@ -981,18 +988,26 @@ namespace Parser2 {
 			break;
 		}
 		output("<项>");
+		return term_type;
 	}
 
 	//＜因子＞ ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'|'('＜表达式＞')'
 	//				｜＜整数＞|＜字符＞｜＜有返回值函数调用语句＞
-	inline void Parser2::factor() {
+	inline Symbol::SymbolType Parser2::factor() {
 		Symbol::SymbolType expr_type;
+		Symbol::SymbolType factor_type = Symbol::INT;
+		Symbol::SymbolItem symbol;
 		string expr_val;
 		token ident, intToken, char_token;
 		string addr;
-		
+		bool find;
 		switch (lookToken()) {
 		case TokenType::IDENFR:
+			tie(find, symbol) = symbolTable.findSymbol(tok.val);
+			checkFind(find);
+			if (symbol.isChar()) {
+				factor_type = Symbol::CHAR;
+			}
 			switch (lookToken(1)) {
 			case TokenType::LPARENT: //＜有返回值函数调用语句＞
 				funcCallStatement();
@@ -1040,6 +1055,7 @@ namespace Parser2 {
 		case TokenType::CHARCON: //＜字符＞
 			char_token = eatToken(TokenType::CHARCON);
 			midCodes.exprPushObj_ImmInt(int(char_token.val[0]));
+			factor_type = Symbol::CHAR;
 			break;
 		case TokenType::INTCON:
 		case TokenType::PLUS:
@@ -1062,6 +1078,7 @@ namespace Parser2 {
 		}
 		facotr_end:
 		output("<因子>");
+		return factor_type;
 	}
 
 	//＜条件语句＞ ::= if '('＜条件＞')'＜语句＞［else＜语句＞］
@@ -1153,9 +1170,9 @@ namespace Parser2 {
 				break;
 			case TokenType::SEMICN:
 			case TokenType::RPARENT:
+				midCodes.addInstr({ MidCode::MidInstr::BLEZ,lexprVal,midCodes.getCondJmpLoc() });
 				goto EndCondition;
 			default:
-				midCodes.addInstr({MidCode::MidInstr::BLEZ,lexprVal,midCodes.getCondJmpLoc()});
 				error(Error::OTHERS);
 				break;
 			}
