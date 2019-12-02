@@ -2,10 +2,10 @@
 
 using namespace std;
 
-namespace MidCode {
+namespace MidIR {
 
 	struct ConstStr {
-		string lable;
+		string label;
 		string value;
 	};
 
@@ -36,15 +36,15 @@ namespace MidCode {
 			VAR_INT_ARRAY,
 		} type;
 
-		ConstStr constStr;
-		VarInt varInt;
-		VarIntArr varIntArray;
+		ConstStr const_str;
+		VarInt var_int;
+		VarIntArr var_int_array;
 
-		GlobalDefine(ConstStr constStr) : type(CONST_STR), constStr(constStr) {}
+		GlobalDefine(ConstStr constStr) : type(CONST_STR), const_str(constStr) {}
 
-		GlobalDefine(VarIntArr var_int_array) : type(VAR_INT_ARRAY), varIntArray(var_int_array) {}
+		GlobalDefine(VarInt varInt) : type(VAR_INT), var_int(varInt) {}
 
-		GlobalDefine(VarInt varInt) : type(VAR_INT), varInt(varInt) {}
+		GlobalDefine(VarIntArr var_int_array) : type(VAR_INT_ARRAY), var_int_array(var_int_array) {}
 		
 	};
 	

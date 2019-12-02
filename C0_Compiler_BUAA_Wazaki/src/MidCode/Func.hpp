@@ -1,6 +1,6 @@
 #pragma once
 
-namespace MidCode {
+namespace MidIR {
 	
 	class Func {
 	public:

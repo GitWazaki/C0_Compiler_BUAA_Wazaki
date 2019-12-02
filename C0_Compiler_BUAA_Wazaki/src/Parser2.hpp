@@ -21,7 +21,8 @@ namespace Parser2 {
 			}
 		}
 
-		MidCode::MidCode program(); //程序
+		MidIR::MidCode parser();
+		
 
 	private:
 		token tok;
@@ -32,12 +33,13 @@ namespace Parser2 {
 		Error::Error& err;
 		bool output_syntax = false;
 
-		MidCode::MidCode midCodes;
+		MidIR::MidCode midCodes;
 
 		TokenType::tokenType lookToken(int preN = 0);
 		token eatToken(TokenType::tokenType);
 		void output(string);
 
+		void program(); //程序
 		void constDec(); //常量说明
 		void constDef(); //常量定义
 		tuple<bool, token> integer(); //整数
@@ -95,11 +97,17 @@ namespace Parser2 {
 		void assignToIdent(string ans_reg, string ident);
 		void exprPushIdent(token token);
 		void scanf2midInstr(Symbol::SymbolItem) ;
-		void pushRegPool();
-		void popRegPool();
+		// void pushRegPool();
+		// void popRegPool();
 		//数组
 		string getArrAddr(string,string);
 	};
+
+	inline MidIR::MidCode Parser2::parser() {
+		program();
+		err.errorPrint();
+		return midCodes;
+	}
 
 	inline TokenType::tokenType Parser2::lookToken(int preN) {
 		while (tokQueue.size() <= preN) {
@@ -155,7 +163,7 @@ namespace Parser2 {
 	}
 
 	//＜程序＞::= ［＜常量说明＞］［＜变量说明＞］{<函数定义>}＜主函数＞
-	inline MidCode::MidCode Parser2::program() {
+	inline void Parser2::program() {
 		switch (lookToken()) {
 		case TokenType::CONSTTK:
 		case TokenType::INTTK:
@@ -171,8 +179,6 @@ namespace Parser2 {
 			break;
 		}
 		output("<程序>");
-		err.errorPrint();
-		return midCodes;
 	}
 
 	//＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}	
@@ -526,7 +532,7 @@ namespace Parser2 {
 			eatToken(TokenType::RBRACE);
 			
 			midCodes.popStack(symbolTable.getStackScopeBytes());
-			symbolTable.clearScopeOffset();
+			// symbolTable.clearScopeOffset();
 			symbolTable.popScope();
 			break;
 		default:
@@ -563,7 +569,7 @@ namespace Parser2 {
 			eatToken(TokenType::RBRACE);
 			
 			midCodes.popStack(symbolTable.getStackScopeBytes());
-			symbolTable.clearScopeOffset();
+			// symbolTable.clearScopeOffset();
 			symbolTable.popScope();
 			break;
 		default:
@@ -765,7 +771,11 @@ namespace Parser2 {
 		Symbol::SymbolItem symbol;
 		bool find;
 		vector<Symbol::SymbolType> inputParaTypeList, exceptedParaTypeList;
-		pushRegPool();
+
+		pushRegToStack("$fp");
+		midCodes.addInstr({ MidIR::MidInstr::PUSH_REGPOOL });
+		// pushRegPool();
+		
 		switch (lookToken()) {
 		case TokenType::IDENFR:
 			ret = funcRetMap[tok.val];
@@ -778,15 +788,21 @@ namespace Parser2 {
 			if(inputParaTypeList.size()!= exceptedParaTypeList.size()) {
 				error(Error::MISMATCHING_OF_PARANUM);
 			}
-			symbolTable.subScopeOffset(inputParaTypeList.size() * 4);	//参数退栈！！！
+			// symbolTable.subScopeOffset(inputParaTypeList.size() * 4);	//参数退栈！！！
 			eatToken(TokenType::RPARENT);
 			break;
 		default:
 			error(Error::OTHERS);
 			break;
 		}
+
+		midCodes.addInstr({ MidIR::MidInstr::ADD, "$fp", "$sp", int(inputParaTypeList.size() * 4) });
+		
 		midCodes.callInstr(ident.val);
-		popRegPool();
+		// popRegPool();
+		midCodes.addInstr({ MidIR::MidInstr::POP_REGPOOL });
+		popRegFromStack("$fp");
+		
 		//区分有返回值函数调用语句和无返回值函数调用语句
 		if (ret) {
 			output("<有返回值函数调用语句>");
@@ -875,7 +891,7 @@ namespace Parser2 {
 			
 			if(isArray) {
 				addr = getArrAddr(ident.val, arr_expr_reg);
-				midCodes.addInstr({ MidCode::MidInstr::SAVE_STA_ARR, expr_ans_reg, addr });
+				midCodes.addInstr({ MidIR::MidInstr::SAVE_STA_ARR, expr_ans_reg, addr });
 			} else {
 				assignToIdent(expr_ans_reg, ident.val);
 			}
@@ -901,7 +917,7 @@ namespace Parser2 {
 			case TokenType::MINU:
 				if (first) {
 					if(lookToken()== TokenType::MINU) {
-						midCodes.pushExprOp(MidCode::ExprOp::NEG);
+						midCodes.pushExprOp(MidIR::ExprOp::NEG);
 					}
 					eatToken(tokType);
 					noProOp = false;
@@ -925,9 +941,9 @@ namespace Parser2 {
 					exprType = Symbol::INT;
 					token opToken = plusOp();
 					if(opToken.type == TokenType::PLUS) {
-						midCodes.pushExprOp(MidCode::ExprOp::PLUS);
+						midCodes.pushExprOp(MidIR::ExprOp::PLUS);
 					} else if (opToken.type == TokenType::MINU) {
-						midCodes.pushExprOp(MidCode::ExprOp::MINUS);
+						midCodes.pushExprOp(MidIR::ExprOp::MINUS);
 					}
 				}
 				termType = term();
@@ -1011,7 +1027,7 @@ namespace Parser2 {
 			switch (lookToken(1)) {
 			case TokenType::LPARENT: //＜有返回值函数调用语句＞
 				funcCallStatement();
-				midCodes.exprPushObj_ImmInt("$v0");
+				midCodes.exprPushReg("$v0");
 				break;
 			case TokenType::LBRACK:
 			case TokenType::LEQ:
@@ -1061,16 +1077,16 @@ namespace Parser2 {
 		case TokenType::PLUS:
 		case TokenType::MINU: //<整数>
 			tie(std::ignore, intToken) = integer();
-			midCodes.exprPushObj_ImmInt(intToken.val);
+			midCodes.exprPushObj_ImmInt(stoi(intToken.val));
 			break;
 		case TokenType::LPARENT: //'('＜表达式＞')'
 			eatToken(TokenType::LPARENT);
-			midCodes.pushExprOp(MidCode::ExprOp::PARE_L);
+			midCodes.pushExprOp(MidIR::ExprOp::PARE_L);
 			midCodes.exprStart();
 			tie(expr_type, expr_val) = expr();
-			midCodes.exprPushObj_ImmInt(expr_val);
+			midCodes.exprPushReg(expr_val);
 			eatToken(TokenType::RPARENT);
-			midCodes.pushExprOp(MidCode::ExprOp::PARE_R);
+			midCodes.pushExprOp(MidIR::ExprOp::PARE_R);
 			break;
 		default:
 			error(Error::OTHERS);
@@ -1170,7 +1186,7 @@ namespace Parser2 {
 				break;
 			case TokenType::SEMICN:
 			case TokenType::RPARENT:
-				midCodes.addInstr({ MidCode::MidInstr::BLEZ,lexprVal,midCodes.getCondJmpLoc() });
+				midCodes.addInstr({ MidIR::MidInstr::BLEZ,lexprVal,midCodes.getCondJmpLoc() });
 				goto EndCondition;
 			default:
 				error(Error::OTHERS);
@@ -1252,11 +1268,11 @@ namespace Parser2 {
 			midCodes.exprStart();
 			exprPushIdent(step_ident_token);
 			if(step_op_token.type==TokenType::PLUS) {
-				midCodes.pushExprOp(MidCode::ExprOp::PLUS);
+				midCodes.pushExprOp(MidIR::ExprOp::PLUS);
 			} else {
-				midCodes.pushExprOp(MidCode::ExprOp::MINUS);
+				midCodes.pushExprOp(MidIR::ExprOp::MINUS);
 			}
-			midCodes.exprPushObj_ImmInt(step_val_token.val);
+			midCodes.exprPushObj_ImmInt(stoi(step_val_token.val));
 			assignToIdent(midCodes.genExprVal(), step_ident_token.val);
 
 			midCodes.jumpInstr(midCodes.getForStartName());
@@ -1356,9 +1372,9 @@ namespace Parser2 {
 				midCodes.exprStart();
 				tie(expr_type, expr_ans_reg) = expr(); //＜表达式＞
 				if(expr_type==Symbol::INT) {
-					midCodes.addInstr({ MidCode::MidInstr::PRINT_INT, expr_ans_reg });
+					midCodes.addInstr({ MidIR::MidInstr::PRINT_INT, expr_ans_reg });
 				} else {
-					midCodes.addInstr({ MidCode::MidInstr::PRINT_CHAR, expr_ans_reg });
+					midCodes.addInstr({ MidIR::MidInstr::PRINT_CHAR, expr_ans_reg });
 				}
 			}
 			break;
@@ -1371,10 +1387,10 @@ namespace Parser2 {
 			midCodes.exprStart();
 			tie(expr_type, expr_ans_reg) = expr(); //＜表达式＞
 			if (expr_type == Symbol::INT) {
-				midCodes.addInstr({ MidCode::MidInstr::PRINT_INT, expr_ans_reg });
+				midCodes.addInstr({ MidIR::MidInstr::PRINT_INT, expr_ans_reg });
 			}
 			else {
-				midCodes.addInstr({ MidCode::MidInstr::PRINT_CHAR, expr_ans_reg });
+				midCodes.addInstr({ MidIR::MidInstr::PRINT_CHAR, expr_ans_reg });
 			}
 			break;
 		default:
@@ -1439,6 +1455,7 @@ namespace Parser2 {
 			eatToken(TokenType::RPARENT);
 			eatToken(TokenType::LBRACE);
 			midCodes.defineFunc("main");
+			midCodes.addInstr({ MidIR::MidInstr::MOVE, "$fp", "$sp" });
 			symbolTable.pushScope();
 			para_num = 0;
 			compStatement();
@@ -1479,11 +1496,11 @@ namespace Parser2 {
 		switch (lookToken()) {
 		case TokenType::MULT:
 			eatToken(TokenType::MULT);
-			midCodes.pushExprOp(MidCode::ExprOp::MULT);
+			midCodes.pushExprOp(MidIR::ExprOp::MULT);
 			break;
 		case TokenType::DIV:
 			eatToken(TokenType::DIV);
-			midCodes.pushExprOp(MidCode::ExprOp::DIV);
+			midCodes.pushExprOp(MidIR::ExprOp::DIV);
 			break;
 		default:
 			error(Error::OTHERS);
@@ -1602,22 +1619,22 @@ namespace Parser2 {
 
 	inline void Parser2::pushRegToStack(string reg_name) {
 		midCodes.pushRegInstr(reg_name);
-		symbolTable.addScopeOffset(4);
+		// symbolTable.addScopeOffset(4);
 	}
 
 	inline void Parser2::popRegFromStack(string reg_name) {
 		midCodes.popRegInstr(reg_name);
-		symbolTable.subScopeOffset(4);
+		// symbolTable.subScopeOffset(4);
 	}
 
 	inline void Parser2::assignToIdent(string ans_reg, string ident) {
 		if (symbolTable.checkSymbolIsGlobal(ident)) {
 			midCodes.addInstr(
-				{ MidCode::MidInstr::SAVE_LABEL, ans_reg, midCodes.getGlobalVarLabel(ident) });
+				{ MidIR::MidInstr::SAVE_GLOBAL, ans_reg, symbolTable.getGlobalOffsetBytesByIdent(ident) });
 		}
 		else {
 			midCodes.addInstr(
-				{ MidCode::MidInstr::SAVE_STACK, ans_reg, symbolTable.getStackOffsetBytesByIdent(ident) });
+				{ MidIR::MidInstr::SAVE_STACK, ans_reg, symbolTable.getStackOffsetBytesByIdent(ident) });
 		}
 	}
 
@@ -1627,10 +1644,10 @@ namespace Parser2 {
 				midCodes.exprPushObj_ImmInt(int(symbolTable.getConstSymbolValue(token.val)[0]));
 			}
 			else {
-				midCodes.exprPushObj_ImmInt(symbolTable.getConstSymbolValue(token.val));
+				midCodes.exprPushObj_ImmInt(stoi(symbolTable.getConstSymbolValue(token.val)));
 			}
 		} else if (symbolTable.checkSymbolIsGlobal(token.val)) {
-			midCodes.exprPushObj_GlobalVar(token.val);
+			midCodes.exprPushObj_GlobalVar(token.val,symbolTable.getGlobalOffsetBytesByIdent(token.val));
 		} else {
 			midCodes.exprPushObj_StackVar(token.val, symbolTable.getStackOffsetBytesByIdent(token.val));
 		}
@@ -1639,48 +1656,51 @@ namespace Parser2 {
 	inline void Parser2::scanf2midInstr(Symbol::SymbolItem symbol)  {
 		if (symbol.isGlobal) {
 			if (symbol.getType() == Symbol::SymbolType::INT) {
-				midCodes.addInstr({ MidCode::MidInstr::SCAN_GLOBAL_INT,midCodes.getGlobalVarLabel(symbol.getName()) });
+				midCodes.addInstr({ MidIR::MidInstr::SCAN_GLOBAL_INT,symbolTable.getGlobalOffsetBytesByIdent(symbol.getName()) });
 			}
 			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
-				midCodes.addInstr({ MidCode::MidInstr::SCAN_GLOBAL_CHAR,midCodes.getGlobalVarLabel(symbol.getName()) });
+				midCodes.addInstr({ MidIR::MidInstr::SCAN_GLOBAL_CHAR,symbolTable.getGlobalOffsetBytesByIdent(symbol.getName()) });
 			}
 		} else {
 			if (symbol.getType() == Symbol::SymbolType::INT) {
-				midCodes.addInstr({ MidCode::MidInstr::SCAN_INT,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
+				midCodes.addInstr({ MidIR::MidInstr::SCAN_INT,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
 			}
 			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
-				midCodes.addInstr({ MidCode::MidInstr::SCAN_CHAR,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
+				midCodes.addInstr({ MidIR::MidInstr::SCAN_CHAR,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
 			}
 		}
 	}
 	
-	inline void Parser2::pushRegPool() {
-		for (int i = 0; i <= POOLSIZE; i++) {
-			midCodes.addInstr({MidCode::MidInstr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
-			pushRegToStack("$k0");
-		}
-	}
-
-	inline void Parser2::popRegPool() {
-		for (int i = POOLSIZE; i >= 0; i--) {
-			popRegFromStack("$k0");
-			midCodes.addInstr({MidCode::MidInstr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
-		}
-	}
+	// inline void Parser2::pushRegPool() {
+	// 	for (int i = 0; i <= POOLSIZE; i++) {
+	// 		midCodes.addInstr({MidIR::MidInstr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+	// 		pushRegToStack("$k0");
+	// 	}
+	// }
+	//
+	// inline void Parser2::popRegPool() {
+	// 	for (int i = POOLSIZE; i >= 0; i--) {
+	// 		popRegFromStack("$k0");
+	// 		midCodes.addInstr({MidIR::MidInstr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+	// 	}
+	// }
 
 	inline string Parser2::getArrAddr(string arr_name, string expr_val) {
-		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k1", "$0", expr_val });
-		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$0", "4" });
-		midCodes.addInstr({ MidCode::MidInstr::MUL, "$k1", "$k1", "$k0" });
+		midCodes.addInstr({ MidIR::MidInstr::MOVE, "$k1", expr_val });
+		midCodes.addInstr({ MidIR::MidInstr::LI, "$k0", "4" });
+		midCodes.addInstr({ MidIR::MidInstr::MUL, "$k1", "$k1", "$k0" });
 		if (symbolTable.checkSymbolIsGlobal(arr_name)) {
-			midCodes.addInstr({ MidCode::MidInstr::LOAD_ADDR, "$k0", midCodes.getGlobalArrLabel(arr_name) });
+			// midCodes.addInstr({ MidIR::MidInstr::LA, "$k0", midCodes.getGlobalArrLabel(arr_name) });
+			midCodes.addInstr({MidIR::MidInstr::LI, "$k0",  symbolTable.getGlobalOffsetBytesByIdent(arr_name) });
+			midCodes.addInstr({MidIR::MidInstr::ADD, "$k0", "$k0", "$k1" });
+			midCodes.addInstr({MidIR::MidInstr::MOVE, "$k1",  "$gp" });
 		}
 		else {
-			midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$0", symbolTable.getStackOffsetBytesByIdent(arr_name) });
-			midCodes.addInstr({ MidCode::MidInstr::SUB, "$k0", "$k0", "$k1" });
-			midCodes.addInstr({ MidCode::MidInstr::ADD, "$k1", "$0", "$sp" });
+			midCodes.addInstr({ MidIR::MidInstr::LI, "$k0", symbolTable.getStackOffsetBytesByIdent(arr_name) });
+			midCodes.addInstr({ MidIR::MidInstr::SUB, "$k0", "$k0", "$k1" });
+			midCodes.addInstr({ MidIR::MidInstr::MOVE, "$k1",  "$fp" });
 		}
-		midCodes.addInstr({ MidCode::MidInstr::ADD, "$k0", "$k0", "$k1" });
+		midCodes.addInstr({ MidIR::MidInstr::ADD, "$k0", "$k0", "$k1" });
 
 		return "$k0";
 	}

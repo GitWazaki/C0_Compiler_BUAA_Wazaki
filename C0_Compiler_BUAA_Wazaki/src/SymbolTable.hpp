@@ -22,11 +22,12 @@ namespace Symbol {
 		void pushScope();
 		void popScope();
 		int getScope();
-		void addScopeOffset(int bytes);
-		void subScopeOffset(int bytes);
-		void clearScopeOffset();
+		// void addScopeOffset(int bytes);
+		// void subScopeOffset(int bytes);
+		// void clearScopeOffset();
 		int getStackScopeBytes();
 		int getStackOffsetBytesByIdent(string ident);
+		int getGlobalOffsetBytesByIdent(string ident);
 		
 		tuple<int, SymbolItem> findSymbolAndScope(string ident);
 
@@ -115,18 +116,17 @@ namespace Symbol {
 		return scopeStack.back();
 	}
 #pragma region extra_scope_offset
-	int extra_scope_offset = 0;
-	inline void SymbolTable::addScopeOffset(int bytes) {
-		extra_scope_offset += bytes;
-	}
-	inline void SymbolTable::subScopeOffset(int bytes) {
-		extra_scope_offset -= bytes;
-	}
-
-	inline void SymbolTable::clearScopeOffset() {
-		extra_scope_offset = 0;
-	}
-
+	// int extra_scope_offset = 0;
+	// inline void SymbolTable::addScopeOffset(int bytes) {
+	// 	extra_scope_offset += bytes;
+	// }
+	// inline void SymbolTable::subScopeOffset(int bytes) {
+	// 	extra_scope_offset -= bytes;
+	// }
+	//
+	// inline void SymbolTable::clearScopeOffset() {
+	// 	extra_scope_offset = 0;
+	// }
 #pragma endregion
 	
 	inline int SymbolTable::getStackScopeBytes() {
@@ -135,7 +135,7 @@ namespace Symbol {
 		for (int i = scopeStack.back(); i < symbolStack.size(); i++) {
 			bytes += symbolStack[i].getBytes();
 		}
-		return bytes + extra_scope_offset;
+		return bytes;
 	}
 
 	inline int SymbolTable::getStackOffsetBytesByIdent(string ident) {
@@ -146,7 +146,17 @@ namespace Symbol {
 				break;
 			bytes += symbolStack[i].getBytes();
 		}
-		return getStackScopeBytes() - bytes - 4;
+		return -bytes;
+	}
+
+	inline int SymbolTable::getGlobalOffsetBytesByIdent(string ident) {
+		int bytes = 0;
+		for (int i = 0; i < scopeStack[1]; i++) {
+			if (symbolStack[i].getName() == ident)
+				break;
+			bytes += symbolStack[i].getBytes();
+		}
+		return bytes;
 	}
 
 	inline tuple<int, SymbolItem> SymbolTable::findSymbolAndScope(string ident) {

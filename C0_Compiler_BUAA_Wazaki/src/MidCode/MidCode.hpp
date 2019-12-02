@@ -6,7 +6,7 @@
 
 using namespace std;
 
-namespace MidCode {
+namespace MidIR {
 
 	namespace ExprOp {
 		enum OP {
@@ -26,13 +26,13 @@ namespace MidCode {
 		MidCode() {
 			cur_blocks = nullptr;
 		}
-		
+
 		vector<GlobalDefine> global_defines;
 		vector<Func> funcs;
-		string func_name;
-
-		BlocksPtr cur_blocks;
 		
+		string func_name;
+		BlocksPtr cur_blocks;
+
 		void addInstr(MidInstr instr) const;
 
 		// global define
@@ -45,10 +45,10 @@ namespace MidCode {
 
 		// new label
 		void newBlock(string label);
-		string getGlobalVarLabel(string ident) ;
+		string getGlobalVarLabel(string ident);
 		string getGlobalArrLabel(string ident);
-		string getStrLabel(string str) ;
-		string newTemp() ;
+		string getStrLabel(string str);
+		string newTemp();
 
 		//expr
 		vector<ExprOp::OP> op_stack;
@@ -56,11 +56,11 @@ namespace MidCode {
 		vector<vector<ExprOp::OP>> op_stack_stack{};
 		vector< std::vector<std::string> > obj_stack_stack{};
 		void pushExprOp(ExprOp::OP op);
-		void exprPushObj_GlobalVar(string ident);
+		void exprPushObj_GlobalVar(string ident, int offset);
 		void exprPushObj_StackVar(string ident, int offset);
-		void exprPushObj_ImmInt(string value);
 		void exprPushObj_ImmInt(int value);
 		void exprPushObj_StackArr(string addr_reg);
+		void exprPushReg(string reg);
 		bool checkOp(ExprOp::OP);
 		void popOp();
 		void genExprOpInstr(MidInstr::MidOp);
@@ -85,7 +85,7 @@ namespace MidCode {
 		void pushRegInstr(string regName);
 		void popRegInstr(string regName);
 		string getReturnLabel() const;
-		void moveReg(string target,string source);
+		void moveReg(string target, string source);
 
 		//Ìø×ªÓï¾ä if for
 		struct BranchDefine {
@@ -130,13 +130,13 @@ namespace MidCode {
 #pragma region globaldefine
 	inline string MidCode::defineConstStr(string str) {
 		string str_label = getStrLabel(str);
-		addGlobalDefine(ConstStr{str_label, str});
+		addGlobalDefine(ConstStr{ str_label, str });
 		return str_label;
 	}
 
 	inline void MidCode::defineGlobalInt(string identName) {
 		string label = getGlobalVarLabel(identName);
-		addGlobalDefine(GlobalDefine{VarInt{label} });
+		addGlobalDefine(GlobalDefine{ VarInt{label} });
 	}
 
 	inline void MidCode::defineGlobalIntArray(string ident, int len) {
@@ -144,7 +144,7 @@ namespace MidCode {
 		addGlobalDefine(GlobalDefine{ VarIntArr{label,len} });
 	}
 #pragma endregion 
-	
+
 	inline void MidCode::newBlock(string label) {
 		cur_blocks->push_back(Block(label));
 	}
@@ -153,19 +153,19 @@ namespace MidCode {
 		global_defines.push_back(item);
 	}
 
-	inline string MidCode::getGlobalVarLabel(string identName)  {
+	inline string MidCode::getGlobalVarLabel(string identName) {
 		return FORMAT("_GLOBAL_VAR_{}", identName);
 	}
 
 	inline string MidCode::getGlobalArrLabel(string identName) {
 		return FORMAT("_GLOBAL_ARR_{}", identName);
 	}
-	
-	inline string MidCode::getStrLabel(string str)  {
+
+	inline string MidCode::getStrLabel(string str) {
 		return FORMAT("_STRING_{}", str_cnt++);
 	}
 
-	inline string MidCode::newTemp()  {
+	inline string MidCode::newTemp() {
 		return FORMAT("_T{}", temp_cnt++);
 	}
 
@@ -174,7 +174,7 @@ namespace MidCode {
 	}
 
 	inline void MidCode::moveReg(string target, string source) {
-		addInstr(MidInstr{ MidInstr::ADD, target, "$0", source });
+		addInstr(MidInstr(MidInstr::MOVE, target, source));
 	}
 
 #pragma region expr
@@ -200,13 +200,13 @@ namespace MidCode {
 				popOp();
 			op_stack.push_back(op);
 			break;
-		default: ;
+		default:;
 		}
 	}
 
-	inline void MidCode::exprPushObj_GlobalVar(string ident) {
+	inline void MidCode::exprPushObj_GlobalVar(string ident, int offset) {
 		string t = newTemp();
-		addInstr(MidInstr{MidInstr::LOAD_LABEL, t, getGlobalVarLabel(ident)});
+		addInstr(MidInstr{ MidInstr::LOAD_GLOBAL, t, offset });
 		obj_stack.push_back(t);
 	}
 
@@ -216,15 +216,9 @@ namespace MidCode {
 		obj_stack.push_back(t);
 	}
 
-	inline void MidCode::exprPushObj_ImmInt(string value) {
-		string t = newTemp();
-		addInstr(MidInstr(MidInstr::ADD, t, "$0", value));
-		obj_stack.push_back(t);
-	}
-
 	inline void MidCode::exprPushObj_ImmInt(int value) {
 		string t = newTemp();
-		addInstr(MidInstr(MidInstr::ADD, t, "$0", to_string(value)));
+		addInstr(MidInstr(MidInstr::LI, t, value));
 		obj_stack.push_back(t);
 	}
 
@@ -234,15 +228,21 @@ namespace MidCode {
 		obj_stack.push_back(t);
 	}
 
+	inline void MidCode::exprPushReg(string reg) {
+		auto t = newTemp();
+		addInstr(MidInstr(MidInstr::MOVE, t, reg));
+		obj_stack.push_back(t);
+	}
+
 	inline bool MidCode::checkOp(ExprOp::OP op) {
-		if(!op_stack.empty()&& ExprOp::op_priority[op_stack.back()] >= ExprOp::op_priority[op]) {
+		if (!op_stack.empty() && ExprOp::op_priority[op_stack.back()] >= ExprOp::op_priority[op]) {
 			return true;
 		}
 		return false;
 	}
 
 	inline void MidCode::popOp() {
-		
+
 		switch (op_stack.back()) {
 		case ExprOp::PARE_L:
 			break;
@@ -272,7 +272,7 @@ namespace MidCode {
 	inline void MidCode::genExprOpInstr(MidInstr::MidOp op) {
 		string temp;
 		string source_a, source_b;
-		if(op==MidInstr::NEG) {
+		if (op == MidInstr::NEG) {
 			temp = newTemp();
 			source_b = obj_stack.back();
 			addInstr(MidInstr(MidInstr::SUB, temp, "$0", source_b));	//temp = $0 - source_b
@@ -290,12 +290,12 @@ namespace MidCode {
 	}
 
 	inline string MidCode::genExprVal() {
-		while(!op_stack.empty()) {
+		while (!op_stack.empty()) {
 			popOp();
 		}
 		string expr_val = obj_stack.back();
 		obj_stack.pop_back();
-		exprEnd();   
+		exprEnd();
 		return expr_val;
 	}
 
@@ -312,13 +312,13 @@ namespace MidCode {
 		obj_stack = obj_stack_stack.back();
 		obj_stack_stack.pop_back();
 	}
-	
+
 #pragma endregion 
 
 #pragma region io
 	// IO
 	inline void MidCode::printStrInstr(string lable) {
-		addInstr(MidInstr{MidInstr::PRINT_GLOBAL_STR, lable});
+		addInstr(MidInstr{ MidInstr::PRINT_GLOBAL_STR, lable });
 	}
 
 	inline void MidCode::printLineInstr() {
@@ -345,11 +345,15 @@ namespace MidCode {
 	}
 
 	inline void MidCode::openStackSpace(int bytes) {
-		addInstr(MidInstr{ MidInstr::PUSH, to_string(bytes) });
+		if (bytes != 0) {
+			addInstr(MidInstr{ MidInstr::PUSH, to_string(bytes) });
+		}
 	}
 
 	inline void MidCode::popStack(int size) {
-		addInstr(MidInstr(MidInstr::POP, to_string(size)));
+		if (size != 0) {
+			addInstr(MidInstr(MidInstr::POP, to_string(size)));
+		}
 	}
 
 	inline void MidCode::addReturnInstr() {
@@ -361,7 +365,7 @@ namespace MidCode {
 	}
 
 	inline void MidCode::pushRegInstr(string regName) {
-		addInstr(MidInstr(MidInstr::PUSH_REG,regName));
+		addInstr(MidInstr(MidInstr::PUSH_REG, regName));
 	}
 
 	inline void MidCode::popRegInstr(string regName) {
@@ -370,7 +374,7 @@ namespace MidCode {
 #pragma endregion
 
 #pragma region branch
-	
+
 	inline void MidCode::defineIf() {
 		if_cnt++;
 		BranchDefine if_define{ BranchDefine::IF_DEFINE,if_cnt };
@@ -460,7 +464,7 @@ namespace MidCode {
 	inline void MidCode::genBranch(TokenType::tokenType cmpType, string lexprReg, string rexprReg) {
 		switch (cmpType) {
 		case TokenType::EQL:
-			addInstr(MidInstr(MidInstr::BNE, lexprReg,rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BNE, lexprReg, rexprReg, getCondJmpLoc()));
 			break;
 		case TokenType::NEQ:
 			addInstr(MidInstr(MidInstr::BEQ, lexprReg, rexprReg, getCondJmpLoc()));
@@ -487,5 +491,5 @@ namespace MidCode {
 	}
 
 #pragma endregion 
-	
+
 }

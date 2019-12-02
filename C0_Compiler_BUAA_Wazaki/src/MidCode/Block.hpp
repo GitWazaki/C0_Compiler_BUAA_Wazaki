@@ -3,7 +3,7 @@
 
 using namespace std;
 
-namespace MidCode {
+namespace MidIR {
 
 	class Block {
 	public:
@@ -22,5 +22,5 @@ namespace MidCode {
 	
 }
 
-using Blocks = std::vector<MidCode::Block>;
+using Blocks = std::vector<MidIR::Block>;
 using BlocksPtr = std::shared_ptr<Blocks>;

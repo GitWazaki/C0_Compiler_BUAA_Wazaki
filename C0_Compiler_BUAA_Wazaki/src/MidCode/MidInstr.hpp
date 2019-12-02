@@ -3,7 +3,7 @@
 
 using namespace std;
 
-namespace MidCode {
+namespace MidIR {
 	class MidInstr {
 	public:
 		enum  MidOp {
@@ -16,12 +16,16 @@ namespace MidCode {
 			SCAN_GLOBAL_CHAR,
 			SCAN_INT,
 			SCAN_CHAR,
+			
 			// ALU
 			ADD,
 			SUB,
 			MUL,
 			DIV,
 			NEG,
+			LI,
+			MOVE,
+			
 			// ±È½Ï
 			BEQ,	//==
 			BNE,	//!=
@@ -31,21 +35,28 @@ namespace MidCode {
 			BLE,	//<=
 			BGEZ,	//>=0
 			BLEZ,	//<=0
+			
 			// Memory
-			LOAD_LABEL,
-			SAVE_LABEL,
+			// LOAD_LABEL,		//no use
+			// SAVE_LABEL,		//no ues
+			LOAD_GLOBAL,
+			SAVE_GLOBAL,
 			LOAD_STACK,
 			SAVE_STACK,
 			LOAD_LAB_IMM,
 			SAVE_LAB_IMM,
 			LOAD_STA_ARR,
 			SAVE_STA_ARR,
-			LOAD_ADDR,
+			LA,
+			
 			// Stack
 			PUSH,
 			POP,
 			PUSH_REG,
 			POP_REG,
+			PUSH_REGPOOL,
+			POP_REGPOOL,
+			
 			CALL,
 			RETURN,
 			JUMP,
@@ -120,7 +131,7 @@ namespace MidCode {
 			"SAVE_LAB_IMM",
 			"LOAD_STA_ARR",
 			"SAVE_STA_ARR",
-			"LOAD_ADDR",
+			"LA",
 			// Stack
 			"PUSH",
 			"POP",
