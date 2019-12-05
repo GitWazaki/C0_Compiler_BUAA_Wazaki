@@ -62,7 +62,6 @@ end funciton
 function main start
   Block main
   $fp = $sp;
-  push $ra;
   push $fp;
   push pool;
   T0 = 7;
@@ -75,6 +74,5 @@ function main start
   print(T1);
   print('\n')
   Block _RETURN_main
-  pop $raB;
 end funciton
 

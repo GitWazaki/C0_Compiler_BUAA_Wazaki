@@ -34,6 +34,7 @@ namespace MidIR {
 		BlocksPtr cur_blocks;
 
 		void addInstr(MidInstr instr) const;
+		void showVarName(string var_name);
 
 		// global define
 		int str_cnt = 0;
@@ -59,7 +60,9 @@ namespace MidIR {
 		void exprPushObj_GlobalVar(string ident, int offset);
 		void exprPushObj_StackVar(string ident, int offset);
 		void exprPushObj_ImmInt(int value);
-		void exprPushObj_StackArr(string addr_reg);
+		void exprPushObj_Stack_Arr(int ident_offset,string expr_reg);
+		void exprPushObj_GLOBAL_Arr(int ident_offset,string expr_reg);
+		
 		void exprPushReg(string reg);
 		bool checkOp(ExprOp::OP);
 		void popOp();
@@ -70,6 +73,7 @@ namespace MidIR {
 
 		// IO
 		void printStrInstr(string lable);
+		void printReg(Symbol::SymbolType type,string expr_reg);
 		void printLineInstr();
 
 		// SAVE & LOAD
@@ -125,6 +129,10 @@ namespace MidIR {
 
 	inline void MidCode::addInstr(MidInstr instr) const {
 		cur_blocks->back().addInstr(instr);
+	}
+
+	inline void MidCode::showVarName(string var_name) {
+		cur_blocks->back().instrs.back().var_name = var_name;
 	}
 
 #pragma region globaldefine
@@ -222,11 +230,18 @@ namespace MidIR {
 		obj_stack.push_back(t);
 	}
 
-	inline void MidCode::exprPushObj_StackArr(string addr_reg) {
+	inline void MidCode::exprPushObj_Stack_Arr(int ident_offset, string sub_reg) {
 		auto t = newTemp();
-		addInstr(MidInstr(MidInstr::LOAD_STA_ARR, t, addr_reg));
+		addInstr(MidInstr(MidInstr::LOAD_STA_ARR, t, ident_offset, sub_reg));
 		obj_stack.push_back(t);
 	}
+
+	inline void MidCode::exprPushObj_GLOBAL_Arr(int ident_offset, string sub_reg) {
+		auto t = newTemp();
+		addInstr(MidInstr(MidInstr::LOAD_GLOBAL_ARR, t, ident_offset, sub_reg));
+		obj_stack.push_back(t);
+	}
+
 
 	inline void MidCode::exprPushReg(string reg) {
 		auto t = newTemp();
@@ -321,19 +336,18 @@ namespace MidIR {
 		addInstr(MidInstr{ MidInstr::PRINT_GLOBAL_STR, lable });
 	}
 
+	inline void MidCode::printReg(Symbol::SymbolType type, string expr_reg) {
+		if (type == Symbol::INT) {
+			addInstr({ MidIR::MidInstr::PRINT_INT, expr_reg });
+		} else {
+			addInstr({ MidIR::MidInstr::PRINT_CHAR, expr_reg });
+		}
+	}
+
 	inline void MidCode::printLineInstr() {
 		addInstr(MidInstr{ MidInstr::PRINT_LINE });
 	}
 #pragma endregion 
-
-	// save and load
-	inline void MidCode::saveStack(string reg, int offset) {
-		addInstr(MidInstr(MidInstr::SAVE_STACK, reg, to_string(offset)));
-	}
-
-	inline void MidCode::loadStack(string reg, int offset) {
-		addInstr(MidInstr(MidInstr::LOAD_STACK, reg, to_string(offset)));
-	}
 
 #pragma region function
 	//function

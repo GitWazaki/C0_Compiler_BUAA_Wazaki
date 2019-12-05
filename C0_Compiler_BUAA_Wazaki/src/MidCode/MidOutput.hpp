@@ -88,19 +88,28 @@ namespace MidIR {
 		instr.target = removePrefix(instr.target);
 		instr.source_a = removePrefix(instr.source_a);
 		instr.source_b = removePrefix(instr.source_b);
+
+		bool showVarName = instr.var_name.size() > 0;
 		
 		switch (instr.midOp) {
 		case MidInstr::PRINT_LINE:
+			write("print('\\n')");
 			break;
 		case MidInstr::PRINT_GLOBAL_STR:
 		case MidInstr::PRINT_INT:
 		case MidInstr::PRINT_CHAR:
+			if(showVarName) {
+				write(FORMAT("print({});", instr.var_name));
+			}
 			write(FORMAT("print({});", instr.target));
 			break;
 		case MidInstr::SCAN_GLOBAL_INT:
 		case MidInstr::SCAN_GLOBAL_CHAR:
 		case MidInstr::SCAN_INT:
 		case MidInstr::SCAN_CHAR:
+			if (showVarName) {
+				write(FORMAT("print({});", instr.var_name));
+			}
 			write(FORMAT("scanf({});", instr.target));
 			break;
 		case MidInstr::ADD:
@@ -116,7 +125,11 @@ namespace MidIR {
 			write(FORMAT("{} = {} / {};", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidInstr::LI:
+			write(FORMAT("{} = {};", instr.target, instr.source_a));
+			break;
 		case MidInstr::LA:
+			write(FORMAT("{} = {};", instr.target, instr.source_a));
+			break;
 		case MidInstr::MOVE:
 			write(FORMAT("{} = {};", instr.target, instr.source_a));
 			break;
@@ -147,23 +160,61 @@ namespace MidIR {
 			
 		// case MidInstr::LOAD_LABEL:
 		// case MidInstr::SAVE_LABEL:
+		// case MidInstr::LOAD_LAB_IMM:
+		// case MidInstr::SAVE_LAB_IMM:
+		case MidInstr::LOAD_GLOBAL:
+			if(showVarName) {
+				write(FORMAT("{} = {};", instr.target, instr.var_name));
+			} else {
+				write(FORMAT("{} = $gp[{}];", instr.target, instr.source_a));
+			}
+			break;
+		case MidInstr::SAVE_GLOBAL:
+			if (showVarName) {
+				write(FORMAT("{} = {};", instr.var_name, instr.target));
+			} else {
+				write(FORMAT("$gp[{}] = {};", instr.source_a, instr.target));
+			}
+			break;
 		case MidInstr::LOAD_STACK:
+			if (showVarName) {
+				write(FORMAT("{} = {};", instr.target, instr.var_name));
+			} else {
+				write(FORMAT("{} = $sp[{}];", instr.target, instr.source_a));
+			}
+			break;
 		case MidInstr::SAVE_STACK:
-		case MidInstr::LOAD_LAB_IMM:
-		case MidInstr::SAVE_LAB_IMM:
+			if (showVarName) {
+				write(FORMAT("{} = {};", instr.var_name, instr.target));
+			} else {
+				write(FORMAT("$sp[{}] = {};", instr.source_a, instr.target));
+			}
+			break;
+		case MidInstr::LOAD_GLOBAL_ARR:
 		case MidInstr::LOAD_STA_ARR:
+			write(FORMAT("{} = [{}];", instr.target, instr.source_a));
+			break;
+		case MidInstr::SAVE_GLOBAL_ARR:
 		case MidInstr::SAVE_STA_ARR:
+			write(FORMAT("[{}] = {};", instr.source_a, instr.target));	//TODO ??
 			break;
 		case MidInstr::PUSH:
+			write(FORMAT("push {}B;", instr.target));
+			break;
 		case MidInstr::POP:
+			write(FORMAT("pop {}B;", instr.target));
+			break;
 		case MidInstr::PUSH_REG:
+			write(FORMAT("push {};", instr.target));
+			break;
 		case MidInstr::POP_REG:
+			write(FORMAT("pop {}B;", instr.target));
 			break;
 		case MidInstr::PUSH_REGPOOL:
-			write("push regpool;");
+			write("push pool;");
 			break;
 		case MidInstr::POP_REGPOOL:
-			write("pop regpool;");
+			write("pop pool;");
 			break;
 			
 		case MidInstr::CALL:
@@ -175,6 +226,8 @@ namespace MidIR {
 		case MidInstr::JUMP:
 			write(FORMAT("jump {};", instr.target));
 			break;
+		case MidInstr::MID_SHOW:
+			write(instr.target);
 			
 		default:break;
 		}

@@ -5,18 +5,7 @@
 using namespace std;
 
 namespace GenObject {
-
-	enum Reg {
-		at,
-		v0, v1,
-		a0, a1, a2, a3,
-		t0, t1, t2, t3, t4, t5, t6, t7, t8, t9,
-		s0, s1, s2, s3, s4, s5, s6, s7,
-		k0, k1,
-		gp, sp, fp,
-		ra
-	};
-
+	
 	class GenMips {
 
 		MidIR::MidCode midCodes;
@@ -39,34 +28,35 @@ namespace GenObject {
 		void genFuncs();
 		void genFunc(MidIR::Func);
 		void genBlock(MidIR::Block& block);
-		// void genText();
-		void allocRegs(MidIR::Block& block);
 		void genInstrs(MidIR::Block& block);
+
+		void insertAfter(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr);
+		void insertBefore(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr);
+		void assignRegs(MidIR::Block& block);
 		void genInstr(MidIR::MidInstr instr);
 		void pushRegPool();
 		void popRegPool();
-		void insertAfter(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr);
-		void insertBefore(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr);
+		
 		// void getRegisters(std::vector<Reg> regs);
 		// void releaseRegisters(std::vector<Reg> regs);
 
-		//Reg assign
-		int mempool_size = 0;
-		map<string, int> memPool;
+		//Reg and mem  assign
 
 		std::vector<std::string> globalRegs = {
 			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
 			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
 			"$v1"
 		};
-		map<string, string> regPool;
-		map<string, bool> availReg;
-		vector<vector<string>> t_stack;
 
-		vector<std::string> ts;
-		std::vector<int> pushPoolSize;
+		int mempool_size = 0;
+		map<string, int> memPool;		//mem to loc
+		vector<int> pushPoolSize;		// 
+		map<string, string> regPool;	//_T{} to reg
+		map<string, bool> availReg;		// reg to bool
+		vector<std::string> used_regs;	//func used regs
+		vector<vector<string>> regs_stack;	//func used regs' stack
 		
-		void resetRegPool();
+		void resetPool();
 		int allocMemPool(string id);
 		int getMemPool(string id);
 		string getReg();
@@ -90,12 +80,6 @@ namespace GenObject {
 		fout << ".text" << endl;
 		fout << "j main" << endl;
 		genFuncs();
-	}
-
-#define REGPOOL "REGPOOL"
-	
-	inline void GenMips::genRegPool() {
-		write(FORMAT("{}: \n .align 2 \n .space {}", REGPOOL,POOLSIZE*4));
 	}
 
 	inline void GenMips::genGlobals() {
@@ -124,14 +108,14 @@ namespace GenObject {
 	inline void GenMips::genFuncs() {
 		auto& funcs = midCodes.funcs;
 		for (int i = 0; i < funcs.size(); i++) {
-			resetRegPool();
+			resetPool();
 			genFunc(funcs[i]);
 		}
 	}
 	
 	inline void GenMips::genFunc(MidIR::Func func) {
+		write("");
 		string func_name = func.func_name;
-		//write(FORMAT("{}:", func_name));
 		auto& blocks = *(func.blocks);
 		for (int i = 0; i < blocks.size(); i++) {
 			genBlock(blocks[i]);
@@ -139,8 +123,25 @@ namespace GenObject {
 	}
 
 	inline void GenMips::genBlock(MidIR::Block& block) {
-		allocRegs(block);
+		assignRegs(block);
 		genInstrs(block);
+	}
+
+	inline void GenMips::genInstrs(MidIR::Block& block) {
+		write(FORMAT("{}:", block.label));
+		vector<MidIR::MidInstr> instrs = block.instrs;
+		for (int i = 0; i < instrs.size(); i++) {
+			genInstr(instrs[i]);
+		}
+	}
+
+	inline void GenMips::insertAfter(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr) {
+		instrs.insert(instrs.begin() + i + 1, instr);
+	}
+
+	void GenMips::insertBefore(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr) {
+		instrs.insert(instrs.begin() + i, instr);
+		i++;
 	}
 
 #define REGPOOL_START 10000 * 4
@@ -170,8 +171,7 @@ namespace GenObject {
 			} \
 		} while(0)
 	
-	// TODO
-	inline void GenMips::allocRegs(MidIR::Block& block) {
+	inline void GenMips::assignRegs(MidIR::Block& block) {
 		
 		vector<MidIR::MidInstr>& instrs = block.instrs;
 		
@@ -195,17 +195,30 @@ namespace GenObject {
 			case MidIR::MidInstr::SCAN_GLOBAL_INT: break;
 			case MidIR::MidInstr::SCAN_GLOBAL_CHAR: break;
 			case MidIR::MidInstr::LOAD_STA_ARR:
-			case MidIR::MidInstr::SAVE_STA_ARR:
+			case MidIR::MidInstr::LOAD_GLOBAL_ARR:
 				if (NOT_ALLAC(target)) {
 					REGPOOL_SAVE(target, $t0);
 				}
 				if (NOT_ALLAC(source_a)) {
 					REGPOOL_LOAD(source_a, $t1);
 				}
+				if (NOT_ALLAC(source_b)) {
+					REGPOOL_LOAD(source_b, $t1);
+				}
+				break;
+			case MidIR::MidInstr::SAVE_STA_ARR:
+			case MidIR::MidInstr::SAVE_GLOBAL_ARR:
+				if (NOT_ALLAC(target)) {
+					REGPOOL_LOAD(target, $t0);
+				}
+				if (NOT_ALLAC(source_a)) {
+					REGPOOL_LOAD(source_a, $t1);
+				}
+				if (NOT_ALLAC(source_b)) {
+					REGPOOL_LOAD(source_b, $t1);
+				}
 				break;
 			
-			// case MidIR::MidInstr::LOAD_LABEL:
-			// case MidIR::MidInstr::SAVE_LABEL:
 			case MidIR::MidInstr::LOAD_GLOBAL:
 			case MidIR::MidInstr::LOAD_STACK:
 				if (NOT_ALLAC(target))
@@ -258,23 +271,23 @@ namespace GenObject {
 				break;
 			case MidIR::MidInstr::POP_REG: break;
 			
-			case MidIR::MidInstr::PUSH_REGPOOL:
-				ts.clear();
+			case MidIR::MidInstr::PUSH_REGPOOL:		// 保存当前使用过的寄存器
+				used_regs.clear();
 				for (int i = 0; i < globalRegs.size(); i++) {
 					if (availReg[globalRegs[i]] == false) {
-						ts.push_back(globalRegs[i]);
+						used_regs.push_back(globalRegs[i]);
 					}
 				}
-				t_stack.push_back(ts);
-				for (int j = 0; j < ts.size(); j++) {
-					insertAfter(instrs, i, {MidIR::MidInstr::PUSH_REG, ts[j] });
+				regs_stack.push_back(used_regs);
+				for (int j = 0; j < used_regs.size(); j++) {
+					insertAfter(instrs, i, {MidIR::MidInstr::PUSH_REG, used_regs[j] });
 				}
 				break;
-			case MidIR::MidInstr::POP_REGPOOL:
-				ts = t_stack.back();
-				t_stack.pop_back();
-				for (int j = 0; j < ts.size(); j++) {
-					insertBefore(instrs, i, {MidIR::MidInstr::POP_REG, ts[j] });
+			case MidIR::MidInstr::POP_REGPOOL:		// 恢复函数调用前使用过的寄存器
+				used_regs = regs_stack.back();
+				regs_stack.pop_back();
+				for (int j = 0; j < used_regs.size(); j++) {
+					insertBefore(instrs, i, {MidIR::MidInstr::POP_REG, used_regs[j] });
 				}
 				break;
 				
@@ -285,14 +298,6 @@ namespace GenObject {
 			default:
 				break;
 			}
-		}
-	}
-	
-	inline void GenMips::genInstrs(MidIR::Block& block) {
-		write(FORMAT("{}:",block.label));
-		vector<MidIR::MidInstr> instrs = block.instrs;
-		for (int i = 0; i < instrs.size(); i++) {
-			genInstr(instrs[i]);
 		}
 	}
 	
@@ -383,12 +388,6 @@ namespace GenObject {
 			write(FORMAT("blez {}, {}", instr.target, instr.source_a));
 			break;
 			
-		// case MidIR::MidInstr::LOAD_LABEL:
-		// 	write(FORMAT("lw {}, {}", instr.target, instr.source_a));
-		// 	break;
-		// case MidIR::MidInstr::SAVE_LABEL:
-		// 	write(FORMAT("sw {}, {}", instr.target, instr.source_a));
-		// 	break;
 		case MidIR::MidInstr::LOAD_GLOBAL:
 			write(FORMAT("lw {}, {}($gp)", instr.target, instr.source_a));
 			break;
@@ -401,17 +400,29 @@ namespace GenObject {
 		case MidIR::MidInstr::SAVE_STACK:
 			write(FORMAT("sw {}, {}($fp)", instr.target, instr.source_a));
 			break;
-		// case MidIR::MidInstr::LOAD_LAB_IMM:
-		// 	write(FORMAT("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b));
-		// 	break;
-		// case MidIR::MidInstr::SAVE_LAB_IMM:
-		// 	write(FORMAT("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b));
-		// 	break;
+		case MidIR::MidInstr::LOAD_GLOBAL_ARR:
+			// lw temp arr_offset($gp+sub_reg>>4)
+			write(FORMAT("sll $k0, {}, 2", instr.source_b));
+			write(FORMAT("add $k0, $k0, $gp"));
+			write(FORMAT("lw {}, {}($k0)",instr.target, instr.source_a));
+			break;
+		case MidIR::MidInstr::SAVE_GLOBAL_ARR:
+			// sw expr_ans arr_offset($gp+sub_reg>>4)
+			write(FORMAT("sll $k0, {}, 2", instr.source_b));
+			write("add $k0, $k0, $gp");
+			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
+			break;
 		case MidIR::MidInstr::LOAD_STA_ARR:
-			write(FORMAT("lw {}, ({})", instr.target, instr.source_a));
+			// write(FORMAT("lw {}, ({})", instr.target, instr.source_a));
+			write(FORMAT("sll $k0, {}, 2", instr.source_b));
+			write("sub $k0, $fp, $k0");
+			write(FORMAT("lw {}, {}($k0)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::SAVE_STA_ARR:
-			write(FORMAT("sw {}, ({})", instr.target, instr.source_a));
+			// write(FORMAT("sw {}, ({})", instr.target, instr.source_a));
+			write(FORMAT("sll $k0, {}, 2", instr.source_b));
+			write("sub $k0, $fp, $k0");
+			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::LA:
 			write(FORMAT("la {}, {}", instr.target, instr.source_a));
@@ -451,7 +462,7 @@ namespace GenObject {
 		}
 	}
 
-	inline void GenMips::pushRegPool() {
+	inline void GenMips::pushRegPool() {	// 保存所有使用过的mem 到栈中
 		pushPoolSize.push_back(mempool_size);
 		for (int i = 0; i < mempool_size; i++) {
 			write(FORMAT("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i));
@@ -465,8 +476,9 @@ namespace GenObject {
 		// }
 	}
 
-	inline void GenMips::popRegPool() {
-		for (int i = pushPoolSize.back() - 1; i >= 0; i--) {
+	inline void GenMips::popRegPool() {		//恢复mempool 从栈中
+		int pop_mempool_size= pushPoolSize.back();
+		for (int i = pop_mempool_size - 1; i >= 0; i--) {
 			write("addi $sp, $sp, 4");
 			write(FORMAT("lw {}, ($sp)", "$k0"));
 			write(FORMAT("sw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i));
@@ -479,24 +491,15 @@ namespace GenObject {
 		pushPoolSize.pop_back();
 	}
 
-	inline void GenMips::insertAfter(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr) {
-		instrs.insert(instrs.begin() + i + 1, instr);
-	}
-
-	void GenMips::insertBefore(vector<MidIR::MidInstr>& instrs, int& i, MidIR::MidInstr instr) {
-		instrs.insert(instrs.begin() + i, instr);
-		i++;
-	}
-
 #pragma region RegAssgin
-	inline void GenMips::resetRegPool() {
+	inline void GenMips::resetPool() {	// 不同function刷新寄存器与内存池
 		mempool_size = 0;
 		memPool.clear();
 		regPool.clear();
 		for (int i = 0; i < globalRegs.size(); i++) {
 			availReg[globalRegs[i]] = true;
 		}
-		t_stack.clear();
+		regs_stack.clear();
 	}
 
 	inline int GenMips::allocMemPool(string id) {
@@ -505,13 +508,13 @@ namespace GenObject {
 	}
 
 	inline int GenMips::getMemPool(string id) {
-		if (memPool.find(id) == memPool.end()) {
-			return allocMemPool(id);
+		if (memPool.find(id) == memPool.end()) { 
+			return allocMemPool(id);	// 还未分配内存空间则进行分配
 		}
-		return memPool[id];
+		return memPool[id];	//已分配内存空间
 	}
 
-	inline string GenMips::getReg() {
+	inline string GenMips::getReg() {	// 获取第一空闲的寄存器
 		for (int i = 0; i < globalRegs.size(); i++) {
 			if (availReg[globalRegs[i]]) {
 				availReg[globalRegs[i]] = false;
@@ -535,14 +538,14 @@ namespace GenObject {
 	}
 
 	inline string GenMips::getRegPool(string id) {
-		if (regPool.find(id) == regPool.end()) {	//未分配
+		if (regPool.find(id) == regPool.end()) {	//如果未分配
 			if (haveAvailReg()) {	// 有空的寄存器
 				allocRegPool(id);	//分配寄存器
 			} else {
 				return id;	//无空寄存器，返回原id: _T{}
 			}
 		}
-		return regPool[id];
+		return regPool[id];	//如果已分配
 	}
 
 #pragma endregion

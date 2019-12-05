@@ -3,100 +3,128 @@
 .text
 j main
 fib:
-addi $sp, $sp, -124
 sw $ra, ($sp)
 addi $sp, $sp, -4
-li $t0, 0
-li $t1, 0
-move $k1, $t0
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-sw $t1, ($k0)
-li $t2, 1
-li $t3, 1
-move $k1, $t2
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-sw $t3, ($k0)
-li $t4, 2
-sw $t4, -4($fp)
-for_1_start:
-lw $t5, -4($fp)
-lw $t6, 0($fp)
-bgt $t5, $t6, for_1_end
-for_1_body:
-lw $t7, -4($fp)
-lw $t8, -4($fp)
-li $t9, 1
-subu $s0, $t8, $t9
-move $k1, $s0
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-lw $s1, ($k0)
-lw $s2, -4($fp)
-li $s3, 2
-subu $s4, $s2, $s3
-move $k1, $s4
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-lw $s5, ($k0)
-addu $s6, $s1, $s5
-move $k1, $t7
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-sw $s6, ($k0)
-lw $s7, -4($fp)
-li $v1, 1
-addu $t0, $s7, $v1
-sw $t0, 40000($gp)
-lw $t0, 40000($gp)
-sw $t0, -4($fp)
-j for_1_start
-for_1_end:
+if_1:
 lw $t0, 0($fp)
-sw $t0, 40004($gp)
-lw $t1, 40004($gp)
-move $k1, $t1
-li $k0, 4
-mul $k1, $k1, $k0
-li $k0, -8
-subu $k0, $k0, $k1
-move $k1, $fp
-addu $k0, $k0, $k1
-lw $t0, ($k0)
-sw $t0, 40008($gp)
-lw $t1, 40008($gp)
-move $v0, $t1
+li $t1, 1
+bne $t0, $t1, if_1_else
+if_1_than:
+lw $t2, 0($fp)
+move $v0, $t2
+j _RETURN_fib
+j if_1_end
+if_1_else:
+if_1_end:
+if_2:
+lw $t3, 0($fp)
+li $t4, 0
+bne $t3, $t4, if_2_else
+if_2_than:
+lw $t5, 0($fp)
+move $v0, $t5
+j _RETURN_fib
+j if_2_end
+if_2_else:
+if_2_end:
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t5, ($sp)
+addi $sp, $sp, -4
+sw $t4, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+lw $t6, 0($fp)
+li $t7, 1
+subu $t8, $t6, $t7
+sw $t8, ($sp)
+addi $sp, $sp, -4
+addu $fp, $sp, 4
+jal fib
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $sp, $sp, 4
+lw $t4, ($sp)
+addi $sp, $sp, 4
+lw $t5, ($sp)
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t9, $v0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t9, ($sp)
+addi $sp, $sp, -4
+sw $t8, ($sp)
+addi $sp, $sp, -4
+sw $t7, ($sp)
+addi $sp, $sp, -4
+sw $t6, ($sp)
+addi $sp, $sp, -4
+sw $t5, ($sp)
+addi $sp, $sp, -4
+sw $t4, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+lw $s0, 0($fp)
+li $s1, 2
+subu $s2, $s0, $s1
+sw $s2, ($sp)
+addi $sp, $sp, -4
+addu $fp, $sp, 4
+jal fib
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $sp, $sp, 4
+lw $t4, ($sp)
+addi $sp, $sp, 4
+lw $t5, ($sp)
+addi $sp, $sp, 4
+lw $t6, ($sp)
+addi $sp, $sp, 4
+lw $t7, ($sp)
+addi $sp, $sp, 4
+lw $t8, ($sp)
+addi $sp, $sp, 4
+lw $t9, ($sp)
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $s3, $v0
+addu $s4, $t9, $s3
+move $v0, $s4
 j _RETURN_fib
 _RETURN_fib:
 addi $sp, $sp, 4
 lw $ra, ($sp)
-addi $sp, $sp, 128
+addi $sp, $sp, 4
 jr $ra
 main:
 move $fp, $sp
-sw $ra, ($sp)
-addi $sp, $sp, -4
 sw $fp, ($sp)
 addi $sp, $sp, -4
 li $t0, 7
@@ -113,30 +141,4 @@ syscall
 li $a0, '\n'
 li $v0, 11
 syscall
-sw $fp, ($sp)
-addi $sp, $sp, -4
-sw $t1, ($sp)
-addi $sp, $sp, -4
-sw $t0, ($sp)
-addi $sp, $sp, -4
-li $t2, 8
-sw $t2, ($sp)
-addi $sp, $sp, -4
-addu $fp, $sp, 4
-jal fib
-addi $sp, $sp, 4
-lw $t0, ($sp)
-addi $sp, $sp, 4
-lw $t1, ($sp)
-addi $sp, $sp, 4
-lw $fp, ($sp)
-move $t3, $v0
-move $a0, $t3
-li $v0, 1
-syscall
-li $a0, '\n'
-li $v0, 11
-syscall
 _RETURN_main:
-addi $sp, $sp, 4
-lw $ra, ($sp)
