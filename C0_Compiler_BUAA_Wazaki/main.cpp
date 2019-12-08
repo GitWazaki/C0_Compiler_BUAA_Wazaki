@@ -4,6 +4,10 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <iostream>
+#include <deque>
+#include <map>
+#include <set>
 
 #include "src/meow/meow.hpp"
 #include "src/token.hpp"
@@ -13,7 +17,7 @@
 #include "src/Parser2.hpp"
 #include "src/MidCode/MidCode.hpp"
 #include "src/MidCode/MidOutput.hpp"
-#include "src/MidCode/Optimizer.hpp"
+#include "src/Optimizer/Optimizer.hpp"
 #include "src/GenObject/GenMips.hpp"
 
 

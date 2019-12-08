@@ -1,142 +1,242 @@
 # C0_Compiler_BUAA_Wazaki gen MIPS
 .data
+_STRING_0:.asciiz "test1" 
+_STRING_1:.asciiz "test2" 
+_STRING_2:.asciiz "test3" 
+_STRING_3:.asciiz "t e s t 4" 
 .text
 j main
-fib:
-sw $ra, ($sp)
-addi $sp, $sp, -4
-if_1:
-lw $t0, 0($fp)
-li $t1, 1
-bne $t0, $t1, if_1_else
-if_1_than:
-lw $t2, 0($fp)
-move $v0, $t2
-j _RETURN_fib
-j if_1_end
-if_1_else:
-if_1_end:
-if_2:
-lw $t3, 0($fp)
-li $t4, 0
-bne $t3, $t4, if_2_else
-if_2_than:
-lw $t5, 0($fp)
-move $v0, $t5
-j _RETURN_fib
-j if_2_end
-if_2_else:
-if_2_end:
-sw $fp, ($sp)
-addi $sp, $sp, -4
-sw $t5, ($sp)
-addi $sp, $sp, -4
-sw $t4, ($sp)
-addi $sp, $sp, -4
-sw $t3, ($sp)
-addi $sp, $sp, -4
-sw $t2, ($sp)
-addi $sp, $sp, -4
-sw $t1, ($sp)
-addi $sp, $sp, -4
-sw $t0, ($sp)
-addi $sp, $sp, -4
-lw $t6, 0($fp)
-li $t7, 1
-subu $t8, $t6, $t7
-sw $t8, ($sp)
-addi $sp, $sp, -4
-addu $fp, $sp, 4
-jal fib
-addi $sp, $sp, 4
-lw $t0, ($sp)
-addi $sp, $sp, 4
-lw $t1, ($sp)
-addi $sp, $sp, 4
-lw $t2, ($sp)
-addi $sp, $sp, 4
-lw $t3, ($sp)
-addi $sp, $sp, 4
-lw $t4, ($sp)
-addi $sp, $sp, 4
-lw $t5, ($sp)
-addi $sp, $sp, 4
-lw $fp, ($sp)
-move $t9, $v0
-sw $fp, ($sp)
-addi $sp, $sp, -4
-sw $t9, ($sp)
-addi $sp, $sp, -4
-sw $t8, ($sp)
-addi $sp, $sp, -4
-sw $t7, ($sp)
-addi $sp, $sp, -4
-sw $t6, ($sp)
-addi $sp, $sp, -4
-sw $t5, ($sp)
-addi $sp, $sp, -4
-sw $t4, ($sp)
-addi $sp, $sp, -4
-sw $t3, ($sp)
-addi $sp, $sp, -4
-sw $t2, ($sp)
-addi $sp, $sp, -4
-sw $t1, ($sp)
-addi $sp, $sp, -4
-sw $t0, ($sp)
-addi $sp, $sp, -4
-lw $s0, 0($fp)
-li $s1, 2
-subu $s2, $s0, $s1
-sw $s2, ($sp)
-addi $sp, $sp, -4
-addu $fp, $sp, 4
-jal fib
-addi $sp, $sp, 4
-lw $t0, ($sp)
-addi $sp, $sp, 4
-lw $t1, ($sp)
-addi $sp, $sp, 4
-lw $t2, ($sp)
-addi $sp, $sp, 4
-lw $t3, ($sp)
-addi $sp, $sp, 4
-lw $t4, ($sp)
-addi $sp, $sp, 4
-lw $t5, ($sp)
-addi $sp, $sp, 4
-lw $t6, ($sp)
-addi $sp, $sp, 4
-lw $t7, ($sp)
-addi $sp, $sp, 4
-lw $t8, ($sp)
-addi $sp, $sp, 4
-lw $t9, ($sp)
-addi $sp, $sp, 4
-lw $fp, ($sp)
-move $s3, $v0
-addu $s4, $t9, $s3
-move $v0, $s4
-j _RETURN_fib
-_RETURN_fib:
-addi $sp, $sp, 4
-lw $ra, ($sp)
-addi $sp, $sp, 4
-jr $ra
+
 main:
 move $fp, $sp
-sw $fp, ($sp)
-addi $sp, $sp, -4
-li $t0, 7
-sw $t0, ($sp)
-addi $sp, $sp, -4
-addu $fp, $sp, 4
-jal fib
-addi $sp, $sp, 4
-lw $fp, ($sp)
-move $t1, $v0
-move $a0, $t1
+addi $sp, $sp, -24
+li $t0, 20
+li $k0, 20
+sw $k0, 16($gp)
+li $t1, 30
+li $k0, 30
+sw $k0, 20($gp)
+li $t2, 103
+li $k0, 103
+sw $k0, 24($gp)
+li $t3, 104
+li $k0, 104
+sw $k0, 28($gp)
+la $a0, _STRING_0
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+la $a0, _STRING_1
+li $v0, 4
+syscall
+li $t4, 103
+li $t5, 104
+li $t6, 207
+li $a0, 207
 li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $t7, 103
+li $t8, 104
+li $t9, 207
+li $a0, 207
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+la $a0, _STRING_2
+li $v0, 4
+syscall
+li $s0, 14
+li $s1, 28
+li $s2, 99
+li $s3, 99
+li $s4, 99
+li $s5, 99
+li $s6, -71
+li $s7, -71
+li $v1, -994
+li $a0, -994
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $t0, 14
+sw $t0, 40000($gp)
+li $t0, 28
+sw $t0, 40004($gp)
+li $t0, 99
+sw $t0, 40008($gp)
+li $t0, -71
+sw $t0, 40012($gp)
+li $t0, -71
+sw $t0, 40016($gp)
+li $t0, -994
+sw $t0, 40020($gp)
+li $a0, -994
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+la $a0, _STRING_3
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $t0, 0
+sw $t0, 40024($gp)
+li $k0, 0
+sw $k0, -16($fp)
+li $t0, 0
+sw $t0, 40028($gp)
+li $k0, 0
+sw $k0, -12($fp)
+for_1_start:
+lw $t0, -12($fp)
+sw $t0, 40032($gp)
+li $t0, 3
+sw $t0, 40036($gp)
+lw $t0, 40032($gp)
+bge $t0, 3, for_1_end
+for_1_body:
+li $v0, 5
+syscall
+sw $v0, -20($fp)
+lw $t0, -12($fp)
+sw $t0, 40040($gp)
+lw $t0, -20($fp)
+sw $t0, 40044($gp)
+lw $t0, 40044($gp)
+lw $t2, 40040($gp)
+sll $k0, $t2, 2
+sub $k0, $fp, $k0
+sw $t0, 0($k0)
+lw $t0, -16($fp)
+sw $t0, 40048($gp)
+lw $t0, -12($fp)
+sw $t0, 40052($gp)
+lw $t2, 40052($gp)
+sll $k0, $t2, 2
+sub $k0, $fp, $k0
+lw $t0, 0($k0)
+sw $t0, 40056($gp)
+lw $t1, 40048($gp)
+lw $t2, 40056($gp)
+addu $t0, $t1, $t2
+sw $t0, 40060($gp)
+lw $t0, 40060($gp)
+sw $t0, -16($fp)
+lw $t0, -12($fp)
+sw $t0, 40064($gp)
+li $t0, 1
+sw $t0, 40068($gp)
+lw $t1, 40064($gp)
+addi $t0, $t1, 1
+sw $t0, 40072($gp)
+lw $t0, 40072($gp)
+sw $t0, -12($fp)
+j for_1_start
+for_1_end:
+lw $t0, -16($fp)
+sw $t0, 40076($gp)
+lw $t0, 40076($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 16($gp)
+sw $t0, 40080($gp)
+lw $t0, 20($gp)
+sw $t0, 40084($gp)
+lw $t1, 40080($gp)
+lw $t2, 40084($gp)
+addu $t0, $t1, $t2
+sw $t0, 40088($gp)
+lw $t0, 40088($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $v0, 5
+syscall
+sw $v0, 16($gp)
+li $v0, 5
+syscall
+sw $v0, 20($gp)
+lw $t0, 16($gp)
+sw $t0, 40092($gp)
+lw $t0, 40092($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 20($gp)
+sw $t0, 40096($gp)
+lw $t0, 40096($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $v0, 5
+syscall
+sw $v0, 16($gp)
+li $v0, 5
+syscall
+sw $v0, 20($gp)
+li $v0, 12
+syscall
+sw $v0, 24($gp)
+li $v0, 12
+syscall
+sw $v0, 28($gp)
+lw $t0, 16($gp)
+sw $t0, 40100($gp)
+lw $t0, 40100($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 20($gp)
+sw $t0, 40104($gp)
+lw $t0, 40104($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 24($gp)
+sw $t0, 40108($gp)
+lw $t0, 40108($gp)
+move $a0, $t0
+li $v0, 11
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 28($gp)
+sw $t0, 40112($gp)
+lw $t0, 40112($gp)
+move $a0, $t0
+li $v0, 11
 syscall
 li $a0, '\n'
 li $v0, 11

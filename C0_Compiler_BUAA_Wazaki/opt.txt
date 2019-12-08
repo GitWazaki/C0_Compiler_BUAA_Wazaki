@@ -1,77 +1,127 @@
 // C0_Compiler_BUAA_Wazaki gen Mid Code
-
-
-function fib start
-  Block fib
-  para int n
-  push $ra;
-  Block if_1
-  T0 = n;
-  T1 = 1;
-  if (T0 != T1) jump if_1_else
-  Block if_1_than
-  T2 = n;
-  $v0 = T2;
-  jump _RETURN_fib;
-  jump if_1_end;
-  Block if_1_else
-  Block if_1_end
-  Block if_2
-  T3 = n;
-  T4 = 0;
-  if (T3 != T4) jump if_2_else
-  Block if_2_than
-  T5 = n;
-  $v0 = T5;
-  jump _RETURN_fib;
-  jump if_2_end;
-  Block if_2_else
-  Block if_2_end
-  push $fp;
-  push pool;
-  T6 = n;
-  T7 = 1;
-  T8 = T6 - T7;
-  push T8;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T9 = $v0;
-  push $fp;
-  push pool;
-  T10 = n;
-  T11 = 2;
-  T12 = T10 - T11;
-  push T12;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T13 = $v0;
-  T14 = T9 + T13;
-  $v0 = T14;
-  jump _RETURN_fib;
-  Block _RETURN_fib
-  pop $raB;
-  pop 4B;
-  return ;
-end funciton
+int e;
+int f;
+int g;
+int h;
+string_0 = "test1";
+string_1 = "test2";
+string_2 = "test3";
+string_3 = "t e s t 4";
 
 
 function main start
   Block main
   $fp = $sp;
-  push $fp;
-  push pool;
-  T0 = 7;
-  push T0;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T1 = $v0;
-  print(T1);
+  int aa[3]
+  int i
+  int sum
+  int tmp
+  push 24B;
+  T0 = 20;
+  e = 20;
+  T1 = 30;
+  f = 30;
+  T2 = 103;
+  g = 103;
+  T3 = 104;
+  h = 104;
+  print(0);
+  print('\n')
+  print(1);
+  T4 = 103;
+  T5 = 104;
+  T6 = 207;
+  print(207);
+  print('\n')
+  T7 = 103;
+  T8 = 104;
+  T9 = 207;
+  print(207);
+  print('\n')
+  print(2);
+  T10 = 14;
+  T11 = 28;
+  T12 = 99;
+  T13 = 99;
+  T14 = 99;
+  T15 = 99;
+  T16 = -71;
+  T17 = -71;
+  T18 = -994;
+  print(-994);
+  print('\n')
+  T19 = 14;
+  T20 = 28;
+  T21 = 99;
+  T22 = -71;
+  T23 = -71;
+  T24 = -994;
+  print(-994);
+  print('\n')
+  print(3);
+  print('\n')
+  T25 = 0;
+  sum = 0;
+  T26 = 0;
+  $sp[-12] = 0;
+  Block for_1_start
+  T27 = i;
+  T28 = 3;
+  if (T27 >= 3) jump for_1_end
+  Block for_1_body
+  print(tmp);
+  scanf(-20);
+  T29 = i;
+  T30 = tmp;
+  aa[T29] = T30;
+  T31 = sum;
+  T32 = i;
+  T33 = aa[T32] ;
+  T34 = T31 + T33;
+  sum = T34;
+  T35 = i;
+  T36 = 1;
+  T37 = T35 + 1;
+  $sp[-12] = T37;
+  jump for_1_start;
+  Block for_1_end
+  T38 = sum;
+  print(T38);
+  print('\n')
+  T39 = e;
+  T40 = f;
+  T41 = T39 + T40;
+  print(T41);
+  print('\n')
+  print(e);
+  scanf(16);
+  print(f);
+  scanf(20);
+  T42 = e;
+  print(T42);
+  print('\n')
+  T43 = f;
+  print(T43);
+  print('\n')
+  print(e);
+  scanf(16);
+  print(f);
+  scanf(20);
+  print(g);
+  scanf(24);
+  print(h);
+  scanf(28);
+  T44 = e;
+  print(T44);
+  print('\n')
+  T45 = f;
+  print(T45);
+  print('\n')
+  T46 = g;
+  print(T46);
+  print('\n')
+  T47 = h;
+  print(T47);
   print('\n')
   Block _RETURN_main
 end funciton

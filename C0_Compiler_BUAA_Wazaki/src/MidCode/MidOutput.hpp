@@ -191,11 +191,19 @@ namespace MidIR {
 			}
 			break;
 		case MidInstr::LOAD_GLOBAL_ARR:
-		case MidInstr::LOAD_STA_ARR:
+		case MidInstr::LOAD_STACK_ARR:
+			if (showVarName) {
+				write(FORMAT("{} = {}[{}] ;", instr.target, instr.var_name, instr.source_b));
+				break;
+			}
 			write(FORMAT("{} = [{}];", instr.target, instr.source_a));
 			break;
 		case MidInstr::SAVE_GLOBAL_ARR:
-		case MidInstr::SAVE_STA_ARR:
+		case MidInstr::SAVE_STACK_ARR:
+			if (showVarName) {
+				write(FORMAT("{}[{}] = {};", instr.var_name, instr.source_b, instr.target));
+				break;
+			}
 			write(FORMAT("[{}] = {};", instr.source_a, instr.target));	//TODO ??
 			break;
 		case MidInstr::PUSH:

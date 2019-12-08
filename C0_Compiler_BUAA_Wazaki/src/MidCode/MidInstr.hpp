@@ -47,8 +47,8 @@ namespace MidIR {
 			SAVE_STACK,
 			LOAD_GLOBAL_ARR,
 			SAVE_GLOBAL_ARR,
-			LOAD_STA_ARR,
-			SAVE_STA_ARR,
+			LOAD_STACK_ARR,
+			SAVE_STACK_ARR,
 			LA,
 
 			// Stack
@@ -62,27 +62,463 @@ namespace MidIR {
 			CALL,
 			RETURN,
 			JUMP,
-
+			NOP,
+			
 			MID_SHOW,
 		} midOp;
 
-		string target, source_a, source_b;
-		string var_name;
-		bool show;
-
-		MidInstr(MidOp op) : midOp(op) {}
-		MidInstr(MidOp op, string target) : midOp(op), target(target) {}
-		MidInstr(MidOp op, string target, string source_a) : midOp(op), target(target), source_a(source_a) {}
+		MidInstr(MidOp op) : midOp(op) { init(); }
+		MidInstr(MidOp op, string target) : midOp(op), target(target) {
+			init();
+		}
+		MidInstr(MidOp op, string target, string source_a) : midOp(op), target(target), source_a(source_a) {
+			init();
+		}
 		MidInstr(MidOp op, string target, string source_a, std::string source_b)
-			: midOp(op), target(target), source_a(source_a), source_b(source_b) {}
+			: midOp(op), target(target), source_a(source_a), source_b(source_b) {
+			init();
+		}
 
-		MidInstr(MidOp op, int target) : midOp(op), target(to_string(target)) {}
+		MidInstr(MidOp op, int target) : midOp(op), target(to_string(target)) {
+			init();
+		}
 		MidInstr(MidOp op, string target, int source_a)
-			: midOp(op), target(target), source_a(to_string(source_a)) {}
+			: midOp(op), target(target), source_a(to_string(source_a)) {
+			init();
+		}
 		MidInstr(MidOp op, string target, string source_a, int source_b)
-			: midOp(op), target(target), source_a(source_a), source_b(to_string(source_b)) {}
+			: midOp(op), target(target), source_a(source_a), source_b(to_string(source_b)) {
+			init();
+		}
 		MidInstr(MidOp op, string target, int source_a, string source_b)
-			: midOp(op), target(target), source_a(to_string(source_a)), source_b(source_b) {}
+			: midOp(op), target(target), source_a(to_string(source_a)), source_b(source_b) {
+			init();
+		}
 
+		string var_name{};
+		bool show = false;
+		string target{}, source_a{}, source_b{};
+		int target_val, a_val, b_val, ans;
+		bool target_has_val = false, a_has_val = false, b_has_val = false, has_ans = false;
+
+		void init();
+		void initNumber();
+		void initGlobal();
+
+		vector<string> getLoads();
+		vector<string> getSaves();
+		string getJumpTarget();
+
+		void setValue(string reg,int value);
+		bool ansComputable();
+		void compute();
+		void optimize();
+		
+		bool isGlobal();
+		bool isLoad_target();
+		bool isLoad_a();
+		bool isLoad_b();
+		bool isSave_target();
+		bool isSave_a();
+		bool isSave_b();
+		bool isArrMemory();
+		bool isJump();
 	};
+
+	inline void MidInstr::init() {
+		initNumber();
+		initGlobal();
+	}
+
+	inline void MidInstr::initNumber() {
+		if(isNumber(target)) {
+			target_has_val = true;
+			target_val = stoi(target);
+		}
+		if(isNumber(source_a)) {
+			a_has_val = true;
+			a_val = stoi(source_a);
+		}
+		if (isNumber(source_b)) {
+			b_has_val = true;
+			b_val = stoi(source_b);
+		}
+	}
+
+	inline void MidInstr::initGlobal() {
+		if(isGlobal()) {
+			if(!var_name.empty()) {
+				var_name = FORMAT("_G_{}", var_name);
+			}
+		}
+	}
+
+	inline vector<string> MidInstr::getLoads() {
+		vector<std::string> loads;
+		bool load_var_name = false;
+		
+		switch (midOp) {
+		case LOAD_STACK:
+		case LOAD_GLOBAL:
+		case LOAD_GLOBAL_ARR:
+		case LOAD_STACK_ARR:
+			if (!var_name.empty()) {
+				loads.push_back(var_name);
+				load_var_name = true;
+			}
+		default:
+			break;
+		}
+
+		if (isLoad_target() && !target_has_val && !load_var_name) {
+			loads.push_back(target);
+		}
+		if (isLoad_a() && !a_has_val) {
+			loads.push_back(source_a);
+		}
+		if (isLoad_b() && !b_has_val) {
+			loads.push_back(source_b);
+		}
+		
+		return loads;
+	}
+
+	inline vector<string> MidInstr::getSaves() {
+		vector<std::string> saves;
+		bool load_var_name = false;
+		
+		switch (midOp) {
+		case SCAN_CHAR:
+		case SCAN_GLOBAL_CHAR:
+		case SCAN_GLOBAL_INT:
+		case SCAN_INT:
+
+		case SAVE_STACK:
+		case SAVE_GLOBAL:
+		case SAVE_GLOBAL_ARR:
+		case SAVE_STACK_ARR:
+			if (!var_name.empty()) {
+				saves.push_back(var_name);
+				load_var_name = true;
+			}
+		default:
+			break;
+		}
+		
+		if(isSave_target() && !load_var_name) {
+			saves.push_back(target);
+		}
+		if(isSave_a()) {
+			saves.push_back(source_a);
+		}
+		if (isSave_b()) {
+			saves.push_back(source_b);
+		}
+
+		return saves;
+	}
+
+	inline string MidInstr::getJumpTarget() {
+		if(isJump()) {
+			switch (midOp) {
+			case BLT:
+			case BGT:
+			case BLE:
+			case BGE:
+			case BEQ:
+			case BNE:
+				return source_b;
+			case BGEZ:
+			case BLEZ:
+				return source_a;
+			case CALL:
+			case RETURN:
+			case JUMP:
+				return target;
+			default:
+				panic("not jump instr");
+			}
+		}
+	}
+
+	inline void MidInstr::setValue(string reg, int value) {
+		if(reg == target) {
+			target_val = value;
+			target = to_string(value);
+			target_has_val = true;
+		}
+		if(reg == source_a) {
+			a_val = value;
+			source_a = to_string(value);
+			a_has_val = true;
+		}
+		if(reg == source_b) {
+			b_val = value;
+			source_b = to_string(value);
+			b_has_val = true;
+		}
+		//TODO ?
+		if (midOp == LOAD_GLOBAL || midOp == LOAD_STACK) {
+			midOp = LI;
+			a_has_val = true;
+			a_val = value;
+			source_a = to_string(value);
+		}
+		if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
+			has_ans = true;
+			ans = value;
+		}
+	}
+
+	inline bool MidInstr::ansComputable() {
+		if (isLoad_target() && !target_has_val)
+			return false;
+		if (isLoad_a() && !a_has_val)
+			return false;
+		if (isLoad_b() && !b_has_val)
+			return false;
+		return true;
+	}
+
+	inline void MidInstr::compute() {
+		switch (midOp) {
+		case ADD:
+			ans = a_val + b_val;
+			has_ans = true;
+			break;
+		case SUB:
+			ans = a_val - b_val;
+			has_ans = true;
+			break;
+		case MUL:
+			ans = a_val * b_val;
+			has_ans = true;
+			break;
+		case DIV:
+			ans = a_val / b_val;
+			has_ans = true;
+			break;
+		case MOVE:
+			ans = a_val;
+			has_ans = true;
+			break;
+		case LI:
+			ans = a_val;
+			has_ans = true;
+			break;
+		case BGEZ:
+			ans = target_val >= 0 ? 1 : 0;
+			break;
+		case BLEZ:
+			ans = target_val <= 0 ? 1 : 0;
+			break;
+		case BLT:
+			ans = target_val < a_val ? 1 : 0;
+			break;
+		case BGT:
+			ans = target_val > a_val ? 1 : 0;
+			break;
+		case BLE:
+			ans = target_val <= a_val ? 1 : 0;
+			break;
+		case BGE:
+			ans = target_val >= a_val ? 1 : 0;
+			break;
+		case BEQ:
+			ans = target_val == a_val ? 1 : 0;
+			break;
+		case BNE:
+			ans = target_val != a_val ? 1 : 0;
+			break;
+		case PRINT_INT:
+		case PRINT_CHAR:
+			ans = target_val;
+			break;
+		default:
+			break;
+		}
+	}
+
+	inline void MidInstr::optimize() {
+		switch (midOp) {
+		case ADD:
+		case SUB:
+		case MUL:
+		case DIV:
+		case MOVE:
+		case LI:
+			midOp = LI;
+			source_a = to_string(ans);
+			break;
+		case BGEZ:
+		case BLEZ:
+			if (ans == 1) {
+				midOp = JUMP;
+				target = source_a;
+			}
+			else {
+				midOp = NOP;
+			}
+			break;
+		case BLT:
+		case BGT:
+		case BLE:
+		case BGE:
+		case BEQ:
+		case BNE:
+			if (ans == 1) {
+				midOp = JUMP;
+				target = source_b;
+			}
+			else {
+				midOp = NOP;
+			}
+			break;
+		case PRINT_INT:
+		case PRINT_CHAR:
+			target = to_string(ans);
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	inline bool MidInstr::isGlobal() {
+		switch (midOp) {
+		case PRINT_GLOBAL_STR:
+		case SCAN_GLOBAL_INT:
+		case SCAN_GLOBAL_CHAR:
+		case LOAD_GLOBAL:
+		case SAVE_GLOBAL:
+		case LOAD_GLOBAL_ARR:
+		case SAVE_GLOBAL_ARR:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isLoad_target() {
+		switch (midOp) {
+		case PRINT_CHAR:
+		case PRINT_INT:
+		case BGEZ:
+		case BLEZ:
+		case BLT:
+		case BGT:
+		case BLE:
+		case BGE:
+		case BEQ:
+		case BNE:
+		case SAVE_GLOBAL:
+		case SAVE_STACK:
+		case SAVE_GLOBAL_ARR:
+		case SAVE_STACK_ARR:
+		case PUSH_REG:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isLoad_a() {
+		switch (midOp) {
+		case ADD:
+		case SUB:
+		case MUL:
+		case DIV:
+		case MOVE:
+		case BLT:
+		case BGT:
+		case BLE:
+		case BGE:
+		case BEQ:
+		case BNE:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isLoad_b() {
+		switch (midOp) {
+		case ADD:
+		case SUB:
+		case MUL:
+		case DIV:
+		case LOAD_GLOBAL_ARR:
+		case LOAD_STACK_ARR:
+		case SAVE_GLOBAL_ARR:
+		case SAVE_STACK_ARR:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isSave_target() {
+		switch (midOp) {
+		case ADD:
+		case SUB:
+		case MUL:
+		case DIV:
+		case MOVE:
+		case LI:
+		case LA:
+		case LOAD_GLOBAL:
+		case LOAD_STACK:
+		case LOAD_GLOBAL_ARR:
+		case LOAD_STACK_ARR:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isSave_a() {
+		switch (midOp) {
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isSave_b() {
+		switch (midOp) {
+		default:
+			return false;
+		}
+	}
+
+	bool  MidInstr::isArrMemory() {
+		switch (midOp) {
+		case SAVE_GLOBAL_ARR:
+		case LOAD_GLOBAL_ARR:
+		case SAVE_STACK_ARR:
+		case LOAD_STACK_ARR:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isJump() {
+		switch (midOp) {
+		case BGEZ:
+		case BLEZ:
+		case BLT:
+		case BGT:
+		case BLE:
+		case BGE:
+		case BEQ:
+		case BNE:
+		case JUMP:
+		case CALL:
+		case RETURN:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 }

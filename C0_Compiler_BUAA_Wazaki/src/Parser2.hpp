@@ -1,7 +1,5 @@
 #pragma once
-#include <iostream>
-#include "deque"
-#include <map>
+
 #include "Lexer.hpp"
 #include "Error.hpp"
 #include "MidCode/MidCode.hpp"
@@ -908,7 +906,7 @@ namespace Parser2 {
 			
 			if(isArray) {
 				// addr = getArrAddr(ident.val, arr_expr_reg);
-				// midCodes.addInstr({ MidIR::MidInstr::SAVE_STA_ARR, expr_ans_reg, addr });
+				// midCodes.addInstr({ MidIR::MidInstr::SAVE_STACK_ARR, expr_ans_reg, addr });
 				assignToArr(ident.val, arr_sub_reg, expr_ans_reg);
 			} else {
 				assignToIdent(expr_ans_reg, ident.val);
@@ -1426,6 +1424,7 @@ namespace Parser2 {
 					error(Error::ERROR_RETURN_IN_RETFUNC);
 				}
 				midCodes.jumpInstr(midCodes.getReturnLabel());
+				midCodes.newBlock(midCodes.getAfterReturnBlockName(midCodes.getReturnLabel()));
 				break;
 			case TokenType::LPARENT:
 				//'('＜表达式＞')']
@@ -1434,6 +1433,7 @@ namespace Parser2 {
 				tie(expr_type, expr_val_reg) = expr();
 				midCodes.moveReg("$v0", expr_val_reg);
 				midCodes.jumpInstr(midCodes.getReturnLabel());
+				midCodes.newBlock(midCodes.getAfterReturnBlockName(midCodes.getReturnLabel()));
 				if(funcDefType== Symbol::INT  && expr_type != Symbol::INT) {
 					error(Error::ERROR_RETURN_IN_RETFUNC);
 				}
@@ -1724,7 +1724,7 @@ namespace Parser2 {
 			midCodes.exprPushObj_GLOBAL_Arr(symbolTable.getGlobalOffsetBytesByIdent(arr_name), sub_reg);
 		}
 		else {
-			midCodes.exprPushObj_GLOBAL_Arr(symbolTable.getStackOffsetBytesByIdent(arr_name), sub_reg);
+			midCodes.exprPushObj_Stack_Arr(symbolTable.getStackOffsetBytesByIdent(arr_name), sub_reg);
 		}
 	}
 
@@ -1735,7 +1735,7 @@ namespace Parser2 {
 			midCodes.addInstr({ MidIR::MidInstr::SAVE_GLOBAL_ARR,expr_ans, symbolTable.getGlobalOffsetBytesByIdent(arr_name),sub_reg });
 		}
 		else {
-			midCodes.addInstr({ MidIR::MidInstr::SAVE_GLOBAL_ARR,expr_ans, symbolTable.getStackOffsetBytesByIdent(arr_name),sub_reg });
+			midCodes.addInstr({ MidIR::MidInstr::SAVE_STACK_ARR,expr_ans, symbolTable.getStackOffsetBytesByIdent(arr_name),sub_reg });
 		}
 	}
 

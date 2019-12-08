@@ -1,130 +1,401 @@
+CONSTTK const
 INTTK int
-IDENFR fib
-<声明头部>
+IDENFR a
+ASSIGN =
+INTCON 14
+<无符号整数>
+<整数>
+COMMA ,
+IDENFR b
+ASSIGN =
+INTCON 28
+<无符号整数>
+<整数>
+<常量定义>
+SEMICN ;
+CONSTTK const
+CHARTK char
+IDENFR c
+ASSIGN =
+CHARCON c
+COMMA ,
+IDENFR d
+ASSIGN =
+CHARCON d
+<常量定义>
+SEMICN ;
+<常量说明>
+INTTK int
+IDENFR e
+COMMA ,
+IDENFR f
+<变量定义>
+SEMICN ;
+CHARTK char
+IDENFR g
+COMMA ,
+IDENFR h
+<变量定义>
+SEMICN ;
+<变量说明>
+VOIDTK void
+MAINTK main
 LPARENT (
-INTTK int
-IDENFR n
-<参数表>
 RPARENT )
 LBRACE {
-IFTK if
-LPARENT (
-IDENFR n
-<因子>
-<项>
-<表达式>
-EQL ==
-INTCON 1
+INTTK int
+IDENFR aa
+LBRACK [
+INTCON 3
+<无符号整数>
+RBRACK ]
+COMMA ,
+IDENFR i
+COMMA ,
+IDENFR sum
+COMMA ,
+IDENFR tmp
+<变量定义>
+SEMICN ;
+<变量说明>
+IDENFR e
+ASSIGN =
+INTCON 20
 <无符号整数>
 <整数>
 <因子>
 <项>
 <表达式>
-<条件>
-RPARENT )
-RETURNTK return
-LPARENT (
-IDENFR n
-<因子>
-<项>
-<表达式>
-RPARENT )
-<返回语句>
+<赋值语句>
 SEMICN ;
 <语句>
-<条件语句>
-<语句>
-IFTK if
-LPARENT (
-IDENFR n
+IDENFR f
+ASSIGN =
+INTCON 30
+<无符号整数>
+<整数>
 <因子>
 <项>
 <表达式>
-EQL ==
+<赋值语句>
+SEMICN ;
+<语句>
+IDENFR g
+ASSIGN =
+CHARCON g
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+IDENFR h
+ASSIGN =
+CHARCON h
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+STRCON test1
+<字符串>
+RPARENT )
+<写语句>
+PRINTFTK printf
+<语句>
+PRINTFTK printf
+LPARENT (
+STRCON test2
+<字符串>
+COMMA ,
+CHARCON g
+<因子>
+<项>
+PLUS +
+CHARCON h
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR g
+<因子>
+<项>
+PLUS +
+IDENFR h
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+STRCON test3
+<字符串>
+COMMA ,
+IDENFR a
+<因子>
+MULT *
+LPARENT (
+IDENFR b
+<因子>
+<项>
+MINU -
+LPARENT (
+LPARENT (
+LPARENT (
+IDENFR c
+<因子>
+<项>
+<表达式>
+RPARENT )
+<因子>
+<项>
+<表达式>
+RPARENT )
+<因子>
+<项>
+<表达式>
+RPARENT )
+<因子>
+<项>
+<表达式>
+RPARENT )
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR a
+<因子>
+MULT *
+LPARENT (
+IDENFR b
+<因子>
+<项>
+MINU -
+IDENFR c
+<因子>
+<项>
+<表达式>
+RPARENT )
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+STRCON t e s t 4
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+IDENFR sum
+ASSIGN =
 INTCON 0
 <无符号整数>
 <整数>
 <因子>
 <项>
 <表达式>
-<条件>
-RPARENT )
-RETURNTK return
-LPARENT (
-IDENFR n
-<因子>
-<项>
-<表达式>
-RPARENT )
-<返回语句>
+<赋值语句>
 SEMICN ;
 <语句>
-<条件语句>
-<语句>
-RETURNTK return
+FORTK for
 LPARENT (
-IDENFR fib
-LPARENT (
-IDENFR n
-<因子>
-<项>
-MINU -
-INTCON 1
+IDENFR i
+ASSIGN =
+INTCON 0
 <无符号整数>
 <整数>
 <因子>
 <项>
 <表达式>
-<值参数表>
+SEMICN ;
+IDENFR i
+<因子>
+<项>
+<表达式>
+LSS <
+INTCON 3
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+SEMICN ;
+IDENFR i
+ASSIGN =
+IDENFR i
+PLUS +
+INTCON 1
+<无符号整数>
+<步长>
 RPARENT )
-<有返回值函数调用语句>
+LBRACE {
+SCANFTK scanf
+LPARENT (
+IDENFR tmp
+RPARENT )
+<读语句>
+SEMICN ;
+<语句>
+IDENFR aa
+LBRACK [
+IDENFR i
+<因子>
+<项>
+<表达式>
+RBRACK ]
+ASSIGN =
+IDENFR tmp
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+IDENFR sum
+ASSIGN =
+IDENFR sum
 <因子>
 <项>
 PLUS +
-IDENFR fib
-LPARENT (
-IDENFR n
-<因子>
-<项>
-MINU -
-INTCON 2
-<无符号整数>
-<整数>
+IDENFR aa
+LBRACK [
+IDENFR i
 <因子>
 <项>
 <表达式>
-<值参数表>
-RPARENT )
-<有返回值函数调用语句>
+RBRACK ]
 <因子>
 <项>
 <表达式>
-RPARENT )
-<返回语句>
+<赋值语句>
 SEMICN ;
 <语句>
 <语句列>
-<复合语句>
 RBRACE }
-<有返回值函数定义>
-VOIDTK void
-MAINTK main
-LPARENT (
-RPARENT )
-LBRACE {
+<语句>
+<循环语句>
+<语句>
 PRINTFTK printf
 LPARENT (
-IDENFR fib
-LPARENT (
-INTCON 7
-<无符号整数>
-<整数>
+IDENFR sum
 <因子>
 <项>
 <表达式>
-<值参数表>
 RPARENT )
-<有返回值函数调用语句>
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR e
+<因子>
+<项>
+PLUS +
+IDENFR f
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+SCANFTK scanf
+LPARENT (
+IDENFR e
+COMMA ,
+IDENFR f
+RPARENT )
+<读语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR e
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR f
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+SCANFTK scanf
+LPARENT (
+IDENFR e
+COMMA ,
+IDENFR f
+COMMA ,
+IDENFR g
+COMMA ,
+IDENFR h
+RPARENT )
+<读语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR e
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR f
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR g
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR h
 <因子>
 <项>
 <表达式>

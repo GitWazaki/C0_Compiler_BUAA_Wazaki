@@ -181,97 +181,27 @@ namespace GenObject {
 			assignReg(instr.target);
 			assignReg(instr.source_a);
 			assignReg(instr.source_b);
-			
-			switch (instr.midOp) {
-			case MidIR::MidInstr::PRINT_LINE: break;
-			case MidIR::MidInstr::PRINT_GLOBAL_STR: break;
-			case MidIR::MidInstr::PRINT_INT:
-			case MidIR::MidInstr::PRINT_CHAR:
-				if (NOT_ALLAC(target))
+
+			if (NOT_ALLAC(target)) {
+				if (instrs[i].isLoad_target())
 					REGPOOL_LOAD(target, $t0);
-				break;
-			case MidIR::MidInstr::SCAN_INT: break;
-			case MidIR::MidInstr::SCAN_CHAR: break;
-			case MidIR::MidInstr::SCAN_GLOBAL_INT: break;
-			case MidIR::MidInstr::SCAN_GLOBAL_CHAR: break;
-			case MidIR::MidInstr::LOAD_STA_ARR:
-			case MidIR::MidInstr::LOAD_GLOBAL_ARR:
-				if (NOT_ALLAC(target)) {
+				if (instrs[i].isSave_target())
 					REGPOOL_SAVE(target, $t0);
-				}
-				if (NOT_ALLAC(source_a)) {
+			}
+			if (NOT_ALLAC(source_a)) {
+				if (instrs[i].isLoad_a())
 					REGPOOL_LOAD(source_a, $t1);
-				}
-				if (NOT_ALLAC(source_b)) {
-					REGPOOL_LOAD(source_b, $t1);
-				}
-				break;
-			case MidIR::MidInstr::SAVE_STA_ARR:
-			case MidIR::MidInstr::SAVE_GLOBAL_ARR:
-				if (NOT_ALLAC(target)) {
-					REGPOOL_LOAD(target, $t0);
-				}
-				if (NOT_ALLAC(source_a)) {
-					REGPOOL_LOAD(source_a, $t1);
-				}
-				if (NOT_ALLAC(source_b)) {
-					REGPOOL_LOAD(source_b, $t1);
-				}
-				break;
-			
-			case MidIR::MidInstr::LOAD_GLOBAL:
-			case MidIR::MidInstr::LOAD_STACK:
-				if (NOT_ALLAC(target))
-					REGPOOL_SAVE(target, $t0);
-				break;
-			case MidIR::MidInstr::SAVE_GLOBAL:
-			case MidIR::MidInstr::SAVE_STACK:
-				if (NOT_ALLAC(target))
-					REGPOOL_LOAD(target, $t0);
-				break;
-				
-			case MidIR::MidInstr::ADD:
-			case MidIR::MidInstr::SUB:
-			case MidIR::MidInstr::MUL:
-			case MidIR::MidInstr::DIV:
-			case MidIR::MidInstr::MOVE:
-			case MidIR::MidInstr::LI:
-				if (NOT_ALLAC(target))
-					REGPOOL_SAVE(target, $t0);
-				if (NOT_ALLAC(source_a))
-					REGPOOL_LOAD(source_a, $t1);
-				if (NOT_ALLAC(source_b))
+				if (instrs[i].isSave_a())
+					REGPOOL_SAVE(source_a, $t1);
+			}
+			if (NOT_ALLAC(source_b)) {
+				if (instrs[i].isLoad_b())
 					REGPOOL_LOAD(source_b, $t2);
-				break;
-			case MidIR::MidInstr::LA:
-				if (NOT_ALLAC(target)) {
-					REGPOOL_LOAD(target, $t0);
-				}
-				break;
-				
-			case MidIR::MidInstr::BLT:
-			case MidIR::MidInstr::BGT:
-			case MidIR::MidInstr::BLE:
-			case MidIR::MidInstr::BGE:
-			case MidIR::MidInstr::BEQ:
-			case MidIR::MidInstr::BNE:
-				if (NOT_ALLAC(target))
-					REGPOOL_LOAD(target, $t0);
-				if (NOT_ALLAC(source_a))
-					REGPOOL_LOAD(source_a, $t1);
-			case MidIR::MidInstr::BGEZ:
-			case MidIR::MidInstr::BLEZ:
-				if (NOT_ALLAC(target))
-					REGPOOL_LOAD(target, $t0);
-				break;
-				
-			case MidIR::MidInstr::PUSH_REG:
-				if (NOT_ALLAC(target))
-					REGPOOL_LOAD(target, $t0);
-				break;
-			case MidIR::MidInstr::POP_REG: break;
-			
-			case MidIR::MidInstr::PUSH_REGPOOL:		// 保存当前使用过的寄存器
+				if (instrs[i].isSave_b())
+					REGPOOL_SAVE(source_b, $t2);
+			}
+
+			if (instr.midOp == MidIR::MidInstr::PUSH_REGPOOL) {		// 保存当前使用过的寄存器
 				used_regs.clear();
 				for (int i = 0; i < globalRegs.size(); i++) {
 					if (availReg[globalRegs[i]] == false) {
@@ -280,23 +210,15 @@ namespace GenObject {
 				}
 				regs_stack.push_back(used_regs);
 				for (int j = 0; j < used_regs.size(); j++) {
-					insertAfter(instrs, i, {MidIR::MidInstr::PUSH_REG, used_regs[j] });
+					insertAfter(instrs, i, { MidIR::MidInstr::PUSH_REG, used_regs[j] });
 				}
-				break;
-			case MidIR::MidInstr::POP_REGPOOL:		// 恢复函数调用前使用过的寄存器
+				
+			} else if (instr.midOp == MidIR::MidInstr::POP_REGPOOL) {
 				used_regs = regs_stack.back();
 				regs_stack.pop_back();
 				for (int j = 0; j < used_regs.size(); j++) {
-					insertBefore(instrs, i, {MidIR::MidInstr::POP_REG, used_regs[j] });
+					insertBefore(instrs, i, { MidIR::MidInstr::POP_REG, used_regs[j] });
 				}
-				break;
-				
-			case MidIR::MidInstr::CALL: break;
-			case MidIR::MidInstr::RETURN: break;
-			case MidIR::MidInstr::JUMP: break;
-				
-			default:
-				break;
 			}
 		}
 	}
@@ -314,12 +236,20 @@ namespace GenObject {
 			write("syscall");
 			break;
 		case MidIR::MidInstr::PRINT_INT:
-			write(FORMAT("move $a0, {}", instr.target));
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $a0, {}", instr.target));
+			} else {
+				write(FORMAT("move $a0, {}", instr.target));
+			}
 			write("li $v0, 1");
 			write("syscall");
 			break;
 		case MidIR::MidInstr::PRINT_CHAR:
-			write(FORMAT("move $a0, {}", instr.target));
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $a0, {}", instr.target));
+			} else {
+				write(FORMAT("move $a0, {}", instr.target));
+			}
 			write("li $v0, 11");
 			write("syscall");
 			break;
@@ -345,15 +275,49 @@ namespace GenObject {
 			break;
 			
 		case MidIR::MidInstr::ADD:
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("addi {}, {}, {}", instr.target, instr.source_a, instr.source_b));
+				break;
+			}
+			if (isNumber(instr.source_a)) {
+				write(FORMAT("addi {}, {}, {}", instr.target, instr.source_b, instr.source_a));
+				break;
+			}
 			write(FORMAT("addu {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::SUB:
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("subi {}, {}, {}", instr.target, instr.source_a, instr.source_b));
+				break;
+			}
+			if (isNumber(instr.source_a)) {
+				write(FORMAT("li $k0, {}", instr.source_a));
+				instr.source_a = "$k0";
+				write(FORMAT("sub {}, {}, {}", instr.target, instr.source_a, instr.source_b));
+				break;
+			}
 			write(FORMAT("subu {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::MUL:
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("li $k0, {}", instr.source_b));
+				instr.source_b = "$k0";
+			}
+			if (isNumber(instr.source_a)) {
+				write(FORMAT("li $k0, {}", instr.source_a));
+				instr.source_a = "$k0";
+			}
 			write(FORMAT("mul {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::DIV:
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("li $k0, {}", instr.source_b));
+				instr.source_b = "$k0";
+			}
+			if (isNumber(instr.source_a)) {
+				write(FORMAT("li $k0, {}", instr.source_a));
+				instr.source_a = "$k0";
+			}
 			write(FORMAT("div {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::LI:
@@ -364,21 +328,45 @@ namespace GenObject {
 			break;
 			
 		case MidIR::MidInstr::BEQ:
+			if (isNumber(instr.target)) {
+				write(FORMAT("beq {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("beq {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BNE:
+			if (isNumber(instr.target)) {
+				write(FORMAT("bne {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("bne {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BGT:
+			if (isNumber(instr.target)) {
+				write(FORMAT("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("bgt {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BGE:
+			if (isNumber(instr.target)) {
+				write(FORMAT("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("bge {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BLT:
+			if (isNumber(instr.target)) {
+				write(FORMAT("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("blt {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BLE:
+			if (isNumber(instr.target)) {
+				write(FORMAT("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				break;
+			}
 			write(FORMAT("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BGEZ:
@@ -391,37 +379,77 @@ namespace GenObject {
 		case MidIR::MidInstr::LOAD_GLOBAL:
 			write(FORMAT("lw {}, {}($gp)", instr.target, instr.source_a));
 			break;
-		case MidIR::MidInstr::SAVE_GLOBAL:
-			write(FORMAT("sw {}, {}($gp)", instr.target, instr.source_a));
-			break;
 		case MidIR::MidInstr::LOAD_STACK:
 			write(FORMAT("lw {}, {}($fp)", instr.target, instr.source_a));
 			break;
+		case MidIR::MidInstr::SAVE_GLOBAL:
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $k0, {}", instr.target));
+				instr.target = "$k0";
+			}
+			write(FORMAT("sw {}, {}($gp)", instr.target, instr.source_a));
+			break;
 		case MidIR::MidInstr::SAVE_STACK:
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $k0, {}", instr.target));
+				instr.target = "$k0";
+			}
 			write(FORMAT("sw {}, {}($fp)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::LOAD_GLOBAL_ARR:
 			// lw temp arr_offset($gp+sub_reg>>4)
-			write(FORMAT("sll $k0, {}, 2", instr.source_b));
-			write(FORMAT("add $k0, $k0, $gp"));
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("addi $k0, $gp, {}", stoi(instr.source_b) * 4));
+			} else {
+				write(FORMAT("sll $k0, {}, 2", instr.source_b));
+				write(FORMAT("add $k0, $k0, $gp"));
+			}
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $at, {}", instr.target));
+				instr.target = "$at";
+			}
 			write(FORMAT("lw {}, {}($k0)",instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::SAVE_GLOBAL_ARR:
 			// sw expr_ans arr_offset($gp+sub_reg>>4)
-			write(FORMAT("sll $k0, {}, 2", instr.source_b));
-			write("add $k0, $k0, $gp");
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("addi $k0, $gp, {}", stoi(instr.source_b) * 4));
+			} else {
+				write(FORMAT("sll $k0, {}, 2", instr.source_b));
+				write("add $k0, $k0, $gp");
+			}
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $at, {}", instr.target));
+				instr.target = "$at";
+			}
 			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
 			break;
-		case MidIR::MidInstr::LOAD_STA_ARR:
+		case MidIR::MidInstr::LOAD_STACK_ARR:
 			// write(FORMAT("lw {}, ({})", instr.target, instr.source_a));
-			write(FORMAT("sll $k0, {}, 2", instr.source_b));
-			write("sub $k0, $fp, $k0");
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("addi $k0, $fp, -{}", stoi(instr.source_b) * 4));
+			} else {
+				write(FORMAT("sll $k0, {}, 2", instr.source_b));
+				write("sub $k0, $fp, $k0");
+			}
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $at, {}", instr.target));
+				instr.target = "$at";
+			}
 			write(FORMAT("lw {}, {}($k0)", instr.target, instr.source_a));
 			break;
-		case MidIR::MidInstr::SAVE_STA_ARR:
+		case MidIR::MidInstr::SAVE_STACK_ARR:
 			// write(FORMAT("sw {}, ({})", instr.target, instr.source_a));
-			write(FORMAT("sll $k0, {}, 2", instr.source_b));
-			write("sub $k0, $fp, $k0");
+			if (isNumber(instr.source_b)) {
+				write(FORMAT("addi $k0, $fp, -{}", stoi(instr.source_b) * 4));
+			} else {
+				write(FORMAT("sll $k0, {}, 2", instr.source_b));
+				write("sub $k0, $fp, $k0");
+			}
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $at, {}", instr.target));
+				instr.target = "$at";
+			}
 			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::LA:
@@ -435,6 +463,10 @@ namespace GenObject {
 			write(FORMAT("addi $sp, $sp, {}", instr.target));
 			break;
 		case MidIR::MidInstr::PUSH_REG:
+			if (isNumber(instr.target)) {
+				write(FORMAT("li $k0, {}", instr.target));
+				instr.target = "$k0";
+			}
 			write(FORMAT("sw {}, ($sp)", instr.target));
 			write("addi $sp, $sp, -4");
 			break;

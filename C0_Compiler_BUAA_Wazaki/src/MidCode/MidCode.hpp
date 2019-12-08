@@ -39,6 +39,7 @@ namespace MidIR {
 		// global define
 		int str_cnt = 0;
 		int temp_cnt = 0;
+		int after_ret_cnt = 0;
 		string defineConstStr(string str);
 		void defineGlobalInt(string ident);
 		void defineGlobalIntArray(string ident, int len);
@@ -89,6 +90,7 @@ namespace MidIR {
 		void pushRegInstr(string regName);
 		void popRegInstr(string regName);
 		string getReturnLabel() const;
+		string getAfterReturnBlockName(string ret_name);
 		void moveReg(string target, string source);
 
 		//Ìø×ªÓï¾ä if for
@@ -181,6 +183,10 @@ namespace MidIR {
 		return FORMAT("_RETURN_{}", func_name);
 	}
 
+	inline string MidCode::getAfterReturnBlockName(string ret_name) {
+		return FORMAT("_AFTER_RETURN_{}_{}",ret_name, after_ret_cnt++);
+	}
+
 	inline void MidCode::moveReg(string target, string source) {
 		addInstr(MidInstr(MidInstr::MOVE, target, source));
 	}
@@ -232,7 +238,7 @@ namespace MidIR {
 
 	inline void MidCode::exprPushObj_Stack_Arr(int ident_offset, string sub_reg) {
 		auto t = newTemp();
-		addInstr(MidInstr(MidInstr::LOAD_STA_ARR, t, ident_offset, sub_reg));
+		addInstr(MidInstr(MidInstr::LOAD_STACK_ARR, t, ident_offset, sub_reg));
 		obj_stack.push_back(t);
 	}
 
@@ -353,6 +359,7 @@ namespace MidIR {
 	//function
 	inline void MidCode::defineFunc(string funcName) {
 		temp_cnt = 0;
+		after_ret_cnt = 0;
 		func_name = funcName;
 		funcs.push_back(Func(funcName));
 		cur_blocks = funcs.back().blocks;	//TODO list?
