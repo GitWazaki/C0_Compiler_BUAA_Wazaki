@@ -70,6 +70,10 @@ bool isNumber(std::string str) {
 	return false;
 }
 
+// int is2power(int num) {
+// 	return (num & (num - 1)) == 0;
+// }
+
 template<typename C, typename I>
 bool notFound(C& container, I item) {
 	return container.find(item) == container.end();

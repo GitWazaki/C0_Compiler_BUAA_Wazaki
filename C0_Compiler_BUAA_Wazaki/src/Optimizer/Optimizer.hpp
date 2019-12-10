@@ -1,9 +1,10 @@
 #pragma once
 #include "constHelper.hpp"
+#include "copyHelper.hpp"
 #include "Flow.hpp"
 #include "ReachingDefine.hpp"
 #include "Struct.hpp"
-#include "Confict.hpp"
+#include "Conflict.hpp"
 
 using namespace std;
 
@@ -28,6 +29,7 @@ namespace MidIR {
 		//methods
 		void removeUselessRa();
 		void constReplace();
+		void copyPropagation();
 		FlowGraph buildFlowGraph();
 		
 		//checker
@@ -44,9 +46,10 @@ namespace MidIR {
 	inline MidCode Optimizer::optimize() {
 		removeUselessRa();
 		constReplace();
-		FlowGraph flow_graph = buildFlowGraph();
+		// copyPropagation();
+		// FlowGraph flow_graph = buildFlowGraph();
 		
-		unitTestDefineUseChain();
+		// unitTestDefineUseChain();
 		return midCodes;
 	}
 
@@ -113,6 +116,17 @@ namespace MidIR {
 		EndFor
 	}
 
+	inline void Optimizer::copyPropagation() {
+		ForFuncs(i, midCodes.funcs, func)
+			ForBlocks(j, func.blocks, block)
+				copyHelper copyHelper;
+				ForInstrs(k, block.instrs, instr)
+					copyHelper.instrCopyPrapa(instr);
+				EndFor
+			EndFor
+		EndFor
+	}
+
 	inline FlowGraph Optimizer::buildFlowGraph() {
 		FlowGraph flowGraph;
 		ForFuncs(i, midCodes.funcs, func)
@@ -170,7 +184,7 @@ namespace MidIR {
 		flow_graph.connectBlocks("B5", "exit");
 		flow_graph.connectBlocks("B6", "B5");
 
-		ConfictGraph define_use_chain;
+		ConflictGraph define_use_chain;
 		define_use_chain.addDef("a","B1", 1);
 		define_use_chain.addDef("i","B1", 2);
 								   

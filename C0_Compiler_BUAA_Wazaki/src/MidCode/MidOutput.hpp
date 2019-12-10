@@ -88,8 +88,11 @@ namespace MidIR {
 		instr.target = removePrefix(instr.target);
 		instr.source_a = removePrefix(instr.source_a);
 		instr.source_b = removePrefix(instr.source_b);
+		instr.dup = removePrefix(instr.dup);
 
 		bool showVarName = instr.var_name.size() > 0;
+
+		// write(FORMAT("{} {}, {}, {}",instr.midOp,instr.target,instr.source_a,instr.source_b));
 		
 		switch (instr.midOp) {
 		case MidInstr::PRINT_LINE:
@@ -98,8 +101,13 @@ namespace MidIR {
 		case MidInstr::PRINT_GLOBAL_STR:
 		case MidInstr::PRINT_INT:
 		case MidInstr::PRINT_CHAR:
-			if(showVarName) {
-				write(FORMAT("print({});", instr.var_name));
+			if (showVarName) {
+				// if(instr.has_dup) {
+				// 	write(FORMAT("scanf({});", instr.dup));
+				// } else {
+					write(FORMAT("scanf({});", instr.var_name));
+				// }
+				break;
 			}
 			write(FORMAT("print({});", instr.target));
 			break;
@@ -108,7 +116,12 @@ namespace MidIR {
 		case MidInstr::SCAN_INT:
 		case MidInstr::SCAN_CHAR:
 			if (showVarName) {
-				write(FORMAT("print({});", instr.var_name));
+				// if(instr.has_dup) {
+				// 	write(FORMAT("scanf({});", instr.dup));
+				// } else {
+					write(FORMAT("scanf({});", instr.var_name));
+				// }
+				break;
 			}
 			write(FORMAT("scanf({});", instr.target));
 			break;
@@ -164,28 +177,47 @@ namespace MidIR {
 		// case MidInstr::SAVE_LAB_IMM:
 		case MidInstr::LOAD_GLOBAL:
 			if(showVarName) {
-				write(FORMAT("{} = {};", instr.target, instr.var_name));
+				// if(instr.has_dup) {
+				// 	write(FORMAT("{} = {};", instr.target, instr.dup));
+				// } else {
+					write(FORMAT("{} = {};", instr.target, instr.var_name));
+				// }
 			} else {
 				write(FORMAT("{} = $gp[{}];", instr.target, instr.source_a));
 			}
 			break;
 		case MidInstr::SAVE_GLOBAL:
 			if (showVarName) {
-				write(FORMAT("{} = {};", instr.var_name, instr.target));
+				// if (instr.has_dup) {
+				// 	write(FORMAT("{} = {};", instr.dup, instr.target));
+				// }
+				// else {
+					write(FORMAT("{} = {};", instr.var_name, instr.target));
+				// }
 			} else {
 				write(FORMAT("$gp[{}] = {};", instr.source_a, instr.target));
 			}
 			break;
 		case MidInstr::LOAD_STACK:
 			if (showVarName) {
-				write(FORMAT("{} = {};", instr.target, instr.var_name));
+				// if (instr.has_dup) {
+				// 	write(FORMAT("{} = {};", instr.target, instr.dup));
+				// }
+				// else {
+					write(FORMAT("{} = {};", instr.target, instr.var_name));
+				// }
 			} else {
 				write(FORMAT("{} = $sp[{}];", instr.target, instr.source_a));
 			}
 			break;
 		case MidInstr::SAVE_STACK:
 			if (showVarName) {
-				write(FORMAT("{} = {};", instr.var_name, instr.target));
+				// if (instr.has_dup) {
+				// 	write(FORMAT("{} = {};", instr.dup, instr.target));
+				// }
+				// else {
+					write(FORMAT("{} = {};", instr.var_name, instr.target));
+				// }
 			} else {
 				write(FORMAT("$sp[{}] = {};", instr.source_a, instr.target));
 			}

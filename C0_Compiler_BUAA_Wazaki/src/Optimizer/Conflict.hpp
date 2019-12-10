@@ -4,7 +4,7 @@ using namespace std;
 
 namespace MidIR {
 
-	class ConfictGraph {
+	class ConflictGraph {
 		using Node = useNode;
 		using Chain = useChain;
 		using Web = useWeb;
@@ -28,7 +28,7 @@ namespace MidIR {
 		
 	};
 
-	inline void ConfictGraph::addDef(string ident, string block_name, int number) {
+	inline void ConflictGraph::addDef(string ident, string block_name, int number) {
 		idents.insert(ident);
 		Node new_node{ block_name, number };
 
@@ -42,14 +42,14 @@ namespace MidIR {
 		reaching_define.addGens(block_name, { new_node.toString() });
 	}
 
-	inline void ConfictGraph::addUse(string ident, string block_name, int number) {
+	inline void ConflictGraph::addUse(string ident, string block_name, int number) {
 		idents.insert(ident);
 		Node new_node{ block_name, number };
 
 		ident_to_uses[ident].insert(new_node);
 	}
 
-	inline void ConfictGraph::reAddDef() {
+	inline void ConflictGraph::reAddDef() {
 		for (string ident : idents) {
 			set<Node> def_nodes = ident_to_defs[ident];
 			for (Node node_i : def_nodes) {
@@ -62,14 +62,14 @@ namespace MidIR {
 		}
 	}
 
-	inline void ConfictGraph::genConfict(FlowGraph& flow_graph) {
+	inline void ConflictGraph::genConfict(FlowGraph& flow_graph) {
 		reaching_define.build(flow_graph);
 		for (string ident : idents) {
 			genWeb(ident);
 		}
 	}
 
-	inline void ConfictGraph::genWeb(string ident) {
+	inline void ConflictGraph::genWeb(string ident) {
 		
 		set<Node> defs = ident_to_defs[ident];
 		set<Node> uses = ident_to_uses[ident];
@@ -126,7 +126,7 @@ namespace MidIR {
 		
 	}
 
-	inline void ConfictGraph::printConfictGraph() {
+	inline void ConflictGraph::printConfictGraph() {
 		reAddDef();
 		reaching_define.printInOut();
 		for (auto i = idents.begin(); i != idents.end(); i++) {

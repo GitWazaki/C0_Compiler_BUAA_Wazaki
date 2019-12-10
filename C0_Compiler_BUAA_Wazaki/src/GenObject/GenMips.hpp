@@ -184,24 +184,24 @@ namespace GenObject {
 
 			if (NOT_ALLAC(target)) {
 				if (instrs[i].isLoad_target())
-					REGPOOL_LOAD(target, $t0);
+					REGPOOL_LOAD(target, $a1);
 				if (instrs[i].isSave_target())
-					REGPOOL_SAVE(target, $t0);
+					REGPOOL_SAVE(target, $a1);
 			}
 			if (NOT_ALLAC(source_a)) {
 				if (instrs[i].isLoad_a())
-					REGPOOL_LOAD(source_a, $t1);
+					REGPOOL_LOAD(source_a, $a2);
 				if (instrs[i].isSave_a())
-					REGPOOL_SAVE(source_a, $t1);
+					REGPOOL_SAVE(source_a, $a2);
 			}
 			if (NOT_ALLAC(source_b)) {
 				if (instrs[i].isLoad_b())
-					REGPOOL_LOAD(source_b, $t2);
+					REGPOOL_LOAD(source_b, $a3);
 				if (instrs[i].isSave_b())
-					REGPOOL_SAVE(source_b, $t2);
+					REGPOOL_SAVE(source_b, $a3);
 			}
 
-			if (instr.midOp == MidIR::MidInstr::PUSH_REGPOOL) {		// 保存当前使用过的寄存器
+			if (instrs[i].midOp == MidIR::MidInstr::PUSH_REGPOOL) {		// 保存当前使用过的寄存器
 				used_regs.clear();
 				for (int i = 0; i < globalRegs.size(); i++) {
 					if (availReg[globalRegs[i]] == false) {
@@ -213,7 +213,7 @@ namespace GenObject {
 					insertAfter(instrs, i, { MidIR::MidInstr::PUSH_REG, used_regs[j] });
 				}
 				
-			} else if (instr.midOp == MidIR::MidInstr::POP_REGPOOL) {
+			} else if (instrs[i].midOp == MidIR::MidInstr::POP_REGPOOL) {
 				used_regs = regs_stack.back();
 				regs_stack.pop_back();
 				for (int j = 0; j < used_regs.size(); j++) {
@@ -300,10 +300,18 @@ namespace GenObject {
 			break;
 		case MidIR::MidInstr::MUL:
 			if (isNumber(instr.source_b)) {
+				if(_Is_pow_2(stoi(instr.source_b))) {
+					write(FORMAT("sll {}, {}, {}", instr.target, instr.source_a, log2(stoi(instr.source_b))));
+					break;
+				}
 				write(FORMAT("li $k0, {}", instr.source_b));
 				instr.source_b = "$k0";
 			}
 			if (isNumber(instr.source_a)) {
+				if (_Is_pow_2(stoi(instr.source_a))) {
+					write(FORMAT("sll {}, {}, {}", instr.target, instr.source_b, log2(stoi(instr.source_a))));
+					break;
+				}
 				write(FORMAT("li $k0, {}", instr.source_a));
 				instr.source_a = "$k0";
 			}
@@ -311,10 +319,18 @@ namespace GenObject {
 			break;
 		case MidIR::MidInstr::DIV:
 			if (isNumber(instr.source_b)) {
+				if (_Is_pow_2(stoi(instr.source_b))) {
+					write(FORMAT("srl {}, {}, {}", instr.target, instr.source_a, log2(stoi(instr.source_b))));
+					break;
+				}
 				write(FORMAT("li $k0, {}", instr.source_b));
 				instr.source_b = "$k0";
 			}
 			if (isNumber(instr.source_a)) {
+				if (_Is_pow_2(stoi(instr.source_a))) {
+					write(FORMAT("srl {}, {}, {}", instr.target, instr.source_b, log2(stoi(instr.source_a))));
+					break;
+				}
 				write(FORMAT("li $k0, {}", instr.source_a));
 				instr.source_a = "$k0";
 			}

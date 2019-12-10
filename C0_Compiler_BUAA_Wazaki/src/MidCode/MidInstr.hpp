@@ -1,5 +1,6 @@
 #pragma once
 #define MCN 50
+#include <xlocmon>
 
 using namespace std;
 
@@ -98,6 +99,8 @@ namespace MidIR {
 		string var_name{};
 		bool show = false;
 		string target{}, source_a{}, source_b{};
+		string dup{};
+		bool has_dup = false;
 		int target_val, a_val, b_val, ans;
 		bool target_has_val = false, a_has_val = false, b_has_val = false, has_ans = false;
 
@@ -109,7 +112,9 @@ namespace MidIR {
 		vector<string> getSaves();
 		string getJumpTarget();
 
-		void setValue(string reg,int value);
+		void constReplace(string reg,int value);
+		void copyReplace(string reg, string dup);
+		void setDup();
 		bool ansComputable();
 		void compute();
 		void optimize();
@@ -123,11 +128,13 @@ namespace MidIR {
 		bool isSave_b();
 		bool isArrMemory();
 		bool isJump();
+		
 	};
 
 	inline void MidInstr::init() {
 		initNumber();
 		initGlobal();
+		has_dup = false;
 	}
 
 	inline void MidInstr::initNumber() {
@@ -185,7 +192,7 @@ namespace MidIR {
 
 	inline vector<string> MidInstr::getSaves() {
 		vector<std::string> saves;
-		bool load_var_name = false;
+		bool save_var_name = false;
 		
 		switch (midOp) {
 		case SCAN_CHAR:
@@ -199,13 +206,13 @@ namespace MidIR {
 		case SAVE_STACK_ARR:
 			if (!var_name.empty()) {
 				saves.push_back(var_name);
-				load_var_name = true;
+				save_var_name = true;
 			}
 		default:
 			break;
 		}
 		
-		if(isSave_target() && !load_var_name) {
+		if(isSave_target() && !save_var_name) {
 			saves.push_back(target);
 		}
 		if(isSave_a()) {
@@ -241,7 +248,7 @@ namespace MidIR {
 		}
 	}
 
-	inline void MidInstr::setValue(string reg, int value) {
+	inline void MidInstr::constReplace(string reg, int value) {
 		if(reg == target) {
 			target_val = value;
 			target = to_string(value);
@@ -267,6 +274,43 @@ namespace MidIR {
 		if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
 			has_ans = true;
 			ans = value;
+		}
+	}
+
+	inline void MidInstr::copyReplace(string reg, string dup) {
+		if (reg == target) {
+			target = dup;
+		}
+		if (reg == source_a) {
+			source_a = dup;
+		}
+		if (reg == source_b) {
+			source_b = dup;
+		}
+		if (midOp == LOAD_STACK || midOp == LOAD_GLOBAL) {
+			if(var_name == reg) {
+				has_dup = true;
+				this->dup = dup;
+			}
+		}
+		else if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
+			if (var_name == reg) {
+				has_dup = true;
+				this->dup = dup;
+			}
+		}
+	}
+
+	inline void MidInstr::setDup() {
+		if (!has_dup) {
+			if (midOp == LOAD_STACK || midOp == LOAD_GLOBAL) {
+				has_dup = true;
+				dup = target;
+			}
+			else if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
+				has_dup = true;
+				dup = target;
+			}
 		}
 	}
 

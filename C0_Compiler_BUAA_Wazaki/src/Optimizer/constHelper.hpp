@@ -15,11 +15,11 @@ namespace MidIR {
 	};
 
 	void constHelper::instrConstReplace(MidInstr& instr) {
-		const auto& loads = instr.getLoads();
+		const auto& loads = instr.getLoads();	//vector<string>
 		for(int i = 0; i < loads.size(); i++) {
 			auto load = loads[i];
 			if(hasValue(load)) {
-				instr.setValue(load,name2constVal[load]);
+				instr.constReplace(load,name2constVal[load]);
 			}
 		}
 		// if(instr.isArrMemory()) {
@@ -30,7 +30,7 @@ namespace MidIR {
 			instr.optimize();
 		}
 
-		const auto& saves = instr.getSaves();
+		const auto& saves = instr.getSaves();	//vector<string>
 		for (int i = 0; i < saves.size(); i++) {
 			auto save = saves[i];
 			if (instr.has_ans) {
