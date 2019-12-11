@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <cmath>
 
 #define FORMAT meow::helper::format
 
@@ -70,9 +71,9 @@ bool isNumber(std::string str) {
 	return false;
 }
 
-// int is2power(int num) {
-// 	return (num & (num - 1)) == 0;
-// }
+int is_power_2(int num) {
+	return (num & (num - 1)) == 0;
+}
 
 template<typename C, typename I>
 bool notFound(C& container, I item) {

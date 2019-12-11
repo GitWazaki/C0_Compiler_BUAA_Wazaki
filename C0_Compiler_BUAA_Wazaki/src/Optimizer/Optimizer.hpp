@@ -4,7 +4,9 @@
 #include "Flow.hpp"
 #include "ReachingDefine.hpp"
 #include "Struct.hpp"
+#include "ActiveRange.hpp"
 #include "Conflict.hpp"
+
 
 using namespace std;
 
@@ -30,10 +32,12 @@ namespace MidIR {
 		void removeUselessRa();
 		void constReplace();
 		void copyPropagation();
-		FlowGraph buildFlowGraph();
+		FlowGraph buildFlowGraph(Func& func);
+		void regAssign();
 		
 		//checker
 		bool noCallInFunc(Func func);
+		bool checkDef(Block block, int line, string def);
 		
 		//modify
 		void removeRa(Func& func);
@@ -45,9 +49,9 @@ namespace MidIR {
 
 	inline MidCode Optimizer::optimize() {
 		removeUselessRa();
-		constReplace();
+		// constReplace();
 		// copyPropagation();
-		// FlowGraph flow_graph = buildFlowGraph();
+		regAssign();
 		
 		// unitTestDefineUseChain();
 		return midCodes;
@@ -64,10 +68,12 @@ namespace MidIR {
 		auto& block = blocks->at(i);
 
 #define ForInstrs(i, _instrs, instr) auto& instrs = _instrs;	\
-	for (int j = 0; j < instrs.size(); j++) {	\
-		auto& instr = instrs[j];
+	for (int i = 0; i < instrs.size(); i++) {	\
+		auto& instr = instrs[i];
 
 #define EndFor }
+
+#define needAssign(reg) !reg.empty() && !startWith(reg, string("$"))
 	
 	
 	inline void Optimizer::insertBefore(vector<MidInstr>& instrs, int& i, MidInstr instr) {
@@ -127,9 +133,9 @@ namespace MidIR {
 		EndFor
 	}
 
-	inline FlowGraph Optimizer::buildFlowGraph() {
+	inline FlowGraph Optimizer::buildFlowGraph(Func& func) {
 		FlowGraph flowGraph;
-		ForFuncs(i, midCodes.funcs, func)
+		// ForFuncs(i, midCodes.funcs, func)
 			ForBlocks(j, func.blocks, block)
 				if(j + 1 < blocks->size()) { // 最后一个block为总的return label
 					MidInstr jumpInstr = getJumpInstr(block);
@@ -141,8 +147,34 @@ namespace MidIR {
 					}
 				}
 			EndFor
-		EndFor
+		// EndFor
 		return flowGraph;
+	}
+
+	inline void Optimizer::regAssign() {
+		ForFuncs(i, midCodes.funcs, func)
+			FlowGraph flow_graph = buildFlowGraph(func);
+			ConflictGraph conflictGraph;
+			ForBlocks(block_num, func.blocks, block)
+				ForInstrs(line_num, block.instrs, instr)
+					instr.line_num_in_block = line_num;
+					vector<string> loads = instr.getLoads();
+					for(string load : loads) {
+						if(needAssign(load)) {
+							conflictGraph.addUse(block_num, block.label, line_num, load);
+						}
+					}
+					vector<string> saves = instr.getSaves();
+					for (string save : saves) {
+						if (needAssign(save) && checkDef(block,line_num,save)) {
+							conflictGraph.addDef(block_num, block.label, line_num, save);
+						}
+					}
+				EndFor
+			EndFor
+			conflictGraph.genConfict(flow_graph);
+			midCodes.func_to_identRange[func.func_name] = conflictGraph.getRanges();
+		EndFor
 	}
 
 #pragma endregion 
@@ -155,6 +187,18 @@ namespace MidIR {
 					return false;
 			EndFor
 		EndFor
+		return true;
+	}
+
+	inline bool Optimizer::checkDef(Block block, int line, string def) {
+		for (int i = line + 1; i < block.instrs.size(); i++) {
+			for(string save : block.instrs[i].getSaves()) {
+				if (save == def) {
+					return false;
+				}
+			}
+			
+		}
 		return true;
 	}
 #pragma endregion 
@@ -185,30 +229,31 @@ namespace MidIR {
 		flow_graph.connectBlocks("B6", "B5");
 
 		ConflictGraph define_use_chain;
-		define_use_chain.addDef("a","B1", 1);
-		define_use_chain.addDef("i","B1", 2);
-								   
-		define_use_chain.addUse("i","B2", 1);
-								   
-		define_use_chain.addDef("a","B3", 1);
-		define_use_chain.addUse("a","B3", 1);
-		define_use_chain.addUse("i","B3", 1);
-								   
-		define_use_chain.addDef("i","B3", 2);
-		define_use_chain.addUse("i","B3", 2);
-								   
-		define_use_chain.addDef("b","B4", 1);
-		define_use_chain.addUse("a","B4", 1);
-		define_use_chain.addDef("i","B4", 2);
-								   
-		define_use_chain.addUse("i","B5", 1);
-								   
-		define_use_chain.addDef("b","B6", 1);
-		define_use_chain.addUse("b","B6", 1);
-		define_use_chain.addUse("i","B6", 1);
-								   
-		define_use_chain.addDef("i","B6", 2);
-		define_use_chain.addUse("i","B6", 2);
+		define_use_chain.addDef(1, "B1", 1, "a");
+		define_use_chain.addDef(1, "B1", 2, "i");
+		// define_use_chain.addDef(1, "B1", 3, "i");
+
+		define_use_chain.addUse(2, "B2", 1, "i");
+
+		define_use_chain.addDef(3, "B3", 1, "a");
+		define_use_chain.addUse(3, "B3", 1, "a");
+		define_use_chain.addUse(3, "B3", 1, "i");
+
+		define_use_chain.addDef(3, "B3", 2, "i");
+		define_use_chain.addUse(3, "B3", 2, "i");
+
+		define_use_chain.addDef(4, "B4", 1, "b");
+		define_use_chain.addUse(4, "B4", 1, "a");
+		define_use_chain.addDef(4, "B4", 2, "i");
+
+		define_use_chain.addUse(5, "B5", 1, "i");
+
+		define_use_chain.addDef(6, "B6", 1, "b");
+		define_use_chain.addUse(6, "B6", 1, "b");
+		define_use_chain.addUse(6, "B6", 1, "i");
+
+		define_use_chain.addDef(6, "B6", 2, "i");
+		define_use_chain.addUse(6, "B6", 2, "i");
 
 
 		define_use_chain.genConfict(flow_graph);

@@ -34,19 +34,19 @@ string readFileIntoString(string filename) {
 }
 
 int main() {
-
-	// string input = readFileIntoString("testfile.txt");
-	// ofstream fout("output.txt");
-	// ofstream errout("error.txt");
-	// string midpath = "mid.txt";
-	// string optpath = "opt.txt";
-	// ofstream mipsout{ "mips.txt" };
-	string input = readFileIntoString("../../../testfile.txt");
-	ofstream fout("../../../output.txt");
-	ofstream errout("../../../error.txt");
-	string midpath = "../../../mid.txt";
-	string optpath = "../../../opt.txt";
-	ofstream mipsout{ "../../../mips.txt" };
+	 
+	string input = readFileIntoString("testfile.txt");
+	ofstream fout("output.txt");
+	ofstream errout("error.txt");
+	string midpath = "mid.txt";
+	string optpath = "opt.txt";
+	ofstream mipsout{ "mips.txt" };
+	// string input = readFileIntoString("../../../testfile.txt");
+	// ofstream fout("../../../output.txt"); 
+	// ofstream errout("../../../error.txt");
+	// string midpath = "../../../mid.txt";
+	// string optpath = "../../../opt.txt";
+	// ofstream mipsout{ "../../../mips.txt" };
 
 	string out_setting = "semo";
 	 

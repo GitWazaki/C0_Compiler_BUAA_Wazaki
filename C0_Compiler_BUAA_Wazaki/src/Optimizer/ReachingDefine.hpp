@@ -12,11 +12,12 @@ namespace MidIR {
 		void addKills(string block_name, vector<string> kills);
 
 		set<string>& getInByBlock(string block);
+		set<string>& getOutByBlock(string block);
 
 		void build(FlowGraph& flowGraph);
 
 		void printInOut();
-		
+
 	};
 
 	inline void ReachingDefine::addGens(string block_name, vector<string> gens) {
@@ -35,6 +36,10 @@ namespace MidIR {
 
 	inline set<string>& ReachingDefine::getInByBlock(string block) {
 		return in[block];
+	}
+
+	inline set<string>& ReachingDefine::getOutByBlock(string block) {
+		return out[block];
 	}
 
 	inline void ReachingDefine::build(FlowGraph& flowGraph) {

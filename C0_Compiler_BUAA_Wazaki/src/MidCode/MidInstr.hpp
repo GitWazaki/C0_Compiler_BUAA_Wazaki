@@ -96,14 +96,16 @@ namespace MidIR {
 			init();
 		}
 
+		
+		string target{}, source_a{}, source_b{};
 		string var_name{};
 		bool show = false;
-		string target{}, source_a{}, source_b{};
-		string dup{};
-		bool has_dup = false;
 		int target_val, a_val, b_val, ans;
 		bool target_has_val = false, a_has_val = false, b_has_val = false, has_ans = false;
-
+		string dup{};
+		bool has_dup = false;
+		int line_num_in_block = -1;
+		
 		void init();
 		void initNumber();
 		void initGlobal();

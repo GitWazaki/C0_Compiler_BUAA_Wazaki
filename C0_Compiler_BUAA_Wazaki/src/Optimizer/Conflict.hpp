@@ -5,9 +5,9 @@ using namespace std;
 namespace MidIR {
 
 	class ConflictGraph {
-		using Node = useNode;
-		using Chain = useChain;
-		using Web = useWeb;
+		using Node = DefUseNode;
+		using Chain = DefUseChain;
+		using Web = DefUseWeb;
 
 		ReachingDefine reaching_define;
 		
@@ -15,22 +15,27 @@ namespace MidIR {
 		set<string> idents;
 		
 		map<string, set<Web>> ident_to_webs;
+		map<string, ActiveRange> ident_to_range;
 
 	public:
-		void addDef(string ident, string block_name, int number);
-		void addUse(string ident, string block_name, int number);
+		void addDef(int block_num, string block_name, int number, string ident);
+		void addUse(int block_num, string block_name, int number, string ident);
 		void reAddDef();
 		
 		void genConfict(FlowGraph& flow_graph);
 		void genWeb(string ident);
+		ActiveRange genRange(string ident);
+		ActiveRange rangeMerge(ActiveRange r1, ActiveRange r2);
+
+		map<string, ActiveRange> getRanges();
 
 		void printConfictGraph();
 		
 	};
 
-	inline void ConflictGraph::addDef(string ident, string block_name, int number) {
+	inline void ConflictGraph::addDef(int block_num, string block_name, int number, string ident) {
 		idents.insert(ident);
-		Node new_node{ block_name, number };
+		Node new_node{ block_num, block_name, number };
 
 		set<Node> def_nodes = ident_to_defs[ident];
 		for (Node def_node : def_nodes) {
@@ -42,9 +47,9 @@ namespace MidIR {
 		reaching_define.addGens(block_name, { new_node.toString() });
 	}
 
-	inline void ConflictGraph::addUse(string ident, string block_name, int number) {
+	inline void ConflictGraph::addUse(int block_num, string block_name, int number, string ident) {
 		idents.insert(ident);
-		Node new_node{ block_name, number };
+		Node new_node{ block_num, block_name, number };
 
 		ident_to_uses[ident].insert(new_node);
 	}
@@ -55,7 +60,7 @@ namespace MidIR {
 			for (Node node_i : def_nodes) {
 				for(Node node_j : def_nodes) {
 					if (node_i != node_j) {
-						reaching_define.addKills(node_i.block, { node_j.toString() });
+						reaching_define.addKills(node_i.block_name, { node_j.toString() });
 					}
 				}
 			}
@@ -63,9 +68,14 @@ namespace MidIR {
 	}
 
 	inline void ConflictGraph::genConfict(FlowGraph& flow_graph) {
+		reAddDef();
 		reaching_define.build(flow_graph);
-		for (string ident : idents) {
+		for (auto ident : idents) {
 			genWeb(ident);
+		}
+		for (auto ident : idents) {
+			cout << ident;
+			ident_to_range[ident] = genRange(ident);
 		}
 	}
 
@@ -83,7 +93,9 @@ namespace MidIR {
 		//把遍历uses，把use加入每一个使用了它的def链中
 		for (Node use : uses) {
 			for (Chain& chain : chains) {
-				if (Found(reaching_define.getInByBlock(use.block), chain.def.toString())) {
+				if (Found(reaching_define.getInByBlock(use.block_name), chain.def.toString())
+					|| Found(reaching_define.getOutByBlock(use.block_name),chain.def.toString())
+					) {
 					chain.uses.push_back(use);
 				}
 			}
@@ -109,21 +121,58 @@ namespace MidIR {
 		int old_size;
 		do {	//循环合并webs中的每一个web，直至不能合并
 			old_size = webs.size();
-			for(int i = 0; i < webs.size() - 1; i++) {
-				Web& web1 = webs[i];
-				Web& web2 = webs[i + 1];
-				if(web1.canMerge(web2)) {
-					web1.merge(web2);
-					webs.erase(webs.begin()+i+1);
-					i--;
+			for(int i = 0; i < webs.size(); i++) {
+				for (int j = 0; j < webs.size(); j++) {
+					Web& web1 = webs[i];
+					Web& web2 = webs[j];
+					if(i == j) {
+						continue;
+					}
+					if (web1.canMerge(web2)) {
+						web1.merge(web2);
+						webs.erase(webs.begin() + j);
+						goto restart;
+					}
 				}
-			}	
+			}
+		restart:;
 		} while(old_size != webs.size());
+		
 		//为每一个变量ident设置它的webs
-		for (Web web : webs) {
+		for (Web& web : webs) {
+			web.sort();
 			ident_to_webs[ident].insert(web);
 		}
 		
+	}
+
+	inline ActiveRange ConflictGraph::genRange(string ident) {
+		set<Web> webs = ident_to_webs[ident];
+
+		if (webs.empty()) {
+			return ActiveRange(Node(0, "Global", 0), Node(INT32_MAX, "Global", INT32_MAX));
+		}
+		
+		ActiveRange range(webs.begin()->chains.begin()->def);
+
+		for(Web web : webs) {
+			for(Chain chain : web.chains) {
+				range = rangeMerge(range, { chain.def });
+				for(Node use : chain.uses) {
+					range = rangeMerge(range, { use });
+				}
+			}
+		}
+
+		return range;
+	}
+
+	inline ActiveRange ConflictGraph::rangeMerge(ActiveRange r1, ActiveRange r2) {
+		return ActiveRange(min(r1.first, r2.first), max(r1.last, r2.last));
+	}
+
+	inline map<string, ActiveRange> ConflictGraph::getRanges() {
+		return ident_to_range;
 	}
 
 	inline void ConflictGraph::printConfictGraph() {

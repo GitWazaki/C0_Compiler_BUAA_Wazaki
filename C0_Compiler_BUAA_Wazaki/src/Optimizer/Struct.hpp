@@ -5,51 +5,59 @@ using namespace std;
 
 namespace MidIR {
 
-	class useNode {
+	class DefUseNode {
+
 	public:
 
-		string block, number;
-		
-		useNode(string block, int number) : block(block), number(to_string(number)) {}
+		string block_name;
+		int block_num,  line_num;
+
+		DefUseNode() {};
+		DefUseNode(int block_num, string block,int num) : block_num(block_num), block_name(block), line_num(num) {}
 		
 		string toString() {
-			return FORMAT("<{}, {}>", block, number);
+			return FORMAT("<{}-{}, {}>", block_num, block_name, line_num);
 		}
 
-		friend std::ostream& operator<<(std::ostream& os, useNode& obj) {
+		friend std::ostream& operator<<(std::ostream& os, DefUseNode& obj) {
 			return os << obj.toString();
 		}
 
-		friend bool operator<(const useNode& lhs, const useNode& rhs) {
-			if (lhs.block < rhs.block)
+		friend bool operator<(const DefUseNode& lhs, const DefUseNode& rhs) {
+			if (lhs.block_name < rhs.block_name)
 				return true;
-			if (rhs.block < lhs.block)
+			if (rhs.block_name < lhs.block_name)
 				return false;
-			return lhs.number < rhs.number;
+			if (lhs.block_num < rhs.block_num)
+				return true;
+			if (rhs.block_num < lhs.block_num)
+				return false;
+			return lhs.line_num < rhs.line_num;
 		}
 
-		friend bool operator==(const useNode& lhs, const useNode& rhs) {
-			return lhs.block == rhs.block
-				&& lhs.number == rhs.number;
+		friend bool operator==(const DefUseNode& lhs, const DefUseNode& rhs) {
+			return lhs.block_name == rhs.block_name
+				&& lhs.block_num == rhs.block_num
+				&& lhs.line_num == rhs.line_num;
 		}
 
-		friend bool operator!=(const useNode& lhs, const useNode& rhs) {
+		friend bool operator!=(const DefUseNode& lhs, const DefUseNode& rhs) {
 			return !(lhs == rhs);
 		}
 		
 	};
 
-	class useChain {
+	class DefUseChain {
 	public:
 
-		using Node = useNode;
-		using Chain = useChain;
+		using Node = DefUseNode;
+		using Chain = DefUseChain;
 	
 		Node def;
 		vector<Node> uses;
-		useChain(Node def) : def(def) {}
+		DefUseChain(Node def) : def(def) {}
 
-		set<Node> getDefAndUsesSet() {
+		set<Node> getDefUsesSet() {
 			set<Node> ans;
 			ans.insert(ans.begin(), def);
 			for (Node use : uses) {
@@ -59,14 +67,18 @@ namespace MidIR {
 		}
 
 		bool overlap(Chain chain) {
-			set<Node> def_uses_set_1 = getDefAndUsesSet();
-			set<Node> def_uses_set_2 = chain.getDefAndUsesSet();
+			set<Node> def_uses_set_1 = getDefUsesSet();
+			set<Node> def_uses_set_2 = chain.getDefUsesSet();
 			for (Node node : def_uses_set_2) {
 				if (Found(def_uses_set_1, node)) {
 					return true;
 				}
 			}
 			return false;
+		}
+
+		void sort() {
+			std::sort(uses.begin(), uses.end());
 		}
 
 		std::string toString() {
@@ -79,11 +91,11 @@ namespace MidIR {
 			return buf.str();
 		}
 
-		friend std::ostream& operator<<(std::ostream& os, useChain& obj) {
+		friend std::ostream& operator<<(std::ostream& os, DefUseChain& obj) {
 			return os << obj.toString();
 		}
 
-		friend bool operator<(const useChain& lhs, const useChain& rhs) {
+		friend bool operator<(const DefUseChain& lhs, const DefUseChain& rhs) {
 			if (lhs.def < rhs.def)
 				return true;
 			if (rhs.def < lhs.def)
@@ -93,11 +105,11 @@ namespace MidIR {
 		
 	};
 
-	class useWeb {
+	class DefUseWeb {
 
-		using Node = useNode;
-		using Chain = useChain;
-		using Web = useWeb;
+		using Node = DefUseNode;
+		using Chain = DefUseChain;
+		using Web = DefUseWeb;
 	public:
 		set<Chain> chains;
 
@@ -125,11 +137,17 @@ namespace MidIR {
 			}
 		}
 
-		friend std::ostream& operator<<(std::ostream& os, useWeb& obj) {
+		void sort() {
+			for (auto chain : chains) {
+				chain.sort();
+			}
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, DefUseWeb& obj) {
 			return os << obj.toString();
 		}
 
-		friend bool operator<(const useWeb& lhs, const useWeb& rhs) {
+		friend bool operator<(const DefUseWeb& lhs, const DefUseWeb& rhs) {
 			return lhs.chains < rhs.chains;
 		}
 

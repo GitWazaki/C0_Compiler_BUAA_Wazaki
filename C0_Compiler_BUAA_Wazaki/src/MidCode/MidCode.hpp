@@ -3,6 +3,7 @@
 #include "Block.hpp"
 #include "Global.hpp"
 #include "Func.hpp"
+#include "../Optimizer/ActiveRange.hpp"
 
 using namespace std;
 
@@ -29,7 +30,10 @@ namespace MidIR {
 
 		vector<GlobalDefine> global_defines;
 		vector<Func> funcs;
+
+		map<string, map<string, ActiveRange>> func_to_identRange;
 		
+		//temp
 		string func_name;
 		BlocksPtr cur_blocks;
 
@@ -362,7 +366,7 @@ namespace MidIR {
 		after_ret_cnt = 0;
 		func_name = funcName;
 		funcs.push_back(Func(funcName));
-		cur_blocks = funcs.back().blocks;	//TODO list?
+		cur_blocks = funcs.back().blocks;
 	}
 
 	inline void MidCode::openStackSpace(int bytes) {

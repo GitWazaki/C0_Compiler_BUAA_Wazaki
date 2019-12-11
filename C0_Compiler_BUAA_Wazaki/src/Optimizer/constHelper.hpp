@@ -22,9 +22,12 @@ namespace MidIR {
 				instr.constReplace(load,name2constVal[load]);
 			}
 		}
-		// if(instr.isArrMemory()) {
+		// if(instr.isArrMemory() ) {
 		// 	return;
 		// }
+		if(instr.isGlobal()) {
+			return;
+		}
 		if (instr.ansComputable()) {
 			instr.compute();
 			instr.optimize();

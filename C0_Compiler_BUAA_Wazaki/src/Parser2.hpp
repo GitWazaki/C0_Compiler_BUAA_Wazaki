@@ -544,8 +544,8 @@ namespace Parser2 {
 			eatToken(TokenType::RBRACE);
 			
 			midCodes.popStack(symbolTable.getStackScopeBytes());
-			// symbolTable.clearScopeOffset();
-			symbolTable.popScope();
+			// midCodes.popStack(symbolTable.getStackScopeBytes() - para_num * 4);
+			symbolTable.popScope(); 
 			break;
 		default:
 			error(Error::OTHERS);
@@ -581,7 +581,7 @@ namespace Parser2 {
 			eatToken(TokenType::RBRACE);
 			
 			midCodes.popStack(symbolTable.getStackScopeBytes());
-			// symbolTable.clearScopeOffset();
+			// midCodes.popStack(symbolTable.getStackScopeBytes() - para_num * 4);
 			symbolTable.popScope();
 			break;
 		default:
@@ -683,9 +683,9 @@ namespace Parser2 {
 		// 	//main 函数，且无全局定义
 		// 	midCodes.openStackVarsSpace(symbolTable.getStackScopeBytes());
 		// } else 
-		if (symbolTable.getScope() > 0) {
+		// if (symbolTable.getScope() > 0) {
 			midCodes.openStackSpace(symbolTable.getStackScopeBytes() - 4*para_num);
-		}
+		// }
 		pushRegToStack("$ra");	//压入返回地址
 		statementBlock();
 		midCodes.newBlock(midCodes.getReturnLabel());
@@ -789,7 +789,6 @@ namespace Parser2 {
 
 		pushRegToStack("$fp");
 		midCodes.addInstr({ MidIR::MidInstr::PUSH_REGPOOL });
-		// pushRegPool();
 		
 		switch (lookToken()) {
 		case TokenType::IDENFR:
@@ -803,19 +802,22 @@ namespace Parser2 {
 			if(inputParaTypeList.size()!= exceptedParaTypeList.size()) {
 				error(Error::MISMATCHING_OF_PARANUM);
 			}
-			// symbolTable.subScopeOffset(inputParaTypeList.size() * 4);	//参数退栈！！！
 			eatToken(TokenType::RPARENT);
 			break;
 		default:
 			error(Error::OTHERS);
 			break;
 		}
-
+		
+		// midCodes.addInstr({ MidIR::MidInstr::PUSH_REGPOOL ,int(inputParaTypeList.size())});
 		midCodes.addInstr({ MidIR::MidInstr::ADD, "$fp", "$sp", int(inputParaTypeList.size() * 4) });
 		
 		midCodes.callInstr(ident.val);
 		// popRegPool();
 		midCodes.addInstr({ MidIR::MidInstr::POP_REGPOOL });
+
+		// midCodes.popStack(int(inputParaTypeList.size() * 4));
+		
 		popRegFromStack("$fp");
 		
 		//区分有返回值函数调用语句和无返回值函数调用语句
@@ -1474,6 +1476,8 @@ namespace Parser2 {
 			para_num = 0;
 			compStatement();
 			eatToken(TokenType::RBRACE);
+			midCodes.popStack(symbolTable.getStackScopeBytes());
+			// midCodes.popStack(symbolTable.getStackScopeBytes() - para_num * 4);
 			symbolTable.popScope();
 			break;
 		default:
