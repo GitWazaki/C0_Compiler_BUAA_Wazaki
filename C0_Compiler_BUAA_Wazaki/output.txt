@@ -1,67 +1,134 @@
+INTTK int
+IDENFR a
+COMMA ,
+IDENFR b
+COMMA ,
+IDENFR c
+COMMA ,
+IDENFR d
+COMMA ,
+IDENFR e
+<变量定义>
+SEMICN ;
+<变量说明>
 VOIDTK void
 MAINTK main
 LPARENT (
 RPARENT )
 LBRACE {
-INTTK int
-IDENFR i
-<变量定义>
-SEMICN ;
-INTTK int
-IDENFR temp
-<变量定义>
-SEMICN ;
-<变量说明>
-FORTK for
+SCANFTK scanf
 LPARENT (
-IDENFR i
-ASSIGN =
-INTCON 1
-<无符号整数>
-<整数>
-<因子>
-<项>
-<表达式>
-SEMICN ;
-IDENFR i
-<因子>
-<项>
-<表达式>
-LSS <
-INTCON 10
-<无符号整数>
-<整数>
-<因子>
-<项>
-<表达式>
-<条件>
-SEMICN ;
-IDENFR i
-ASSIGN =
-IDENFR i
-PLUS +
-INTCON 1
-<无符号整数>
-<步长>
+IDENFR a
 RPARENT )
-LBRACE {
-IDENFR temp
+<读语句>
+SEMICN ;
+<语句>
+IDENFR b
 ASSIGN =
-IDENFR i
-<因子>
-<项>
-PLUS +
-IDENFR i
+IDENFR a
 <因子>
 <项>
 <表达式>
 <赋值语句>
 SEMICN ;
 <语句>
-<语句列>
-RBRACE }
+IDENFR c
+ASSIGN =
+IDENFR a
+<因子>
+<项>
+PLUS +
+IDENFR b
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
 <语句>
-<循环语句>
+IDENFR d
+ASSIGN =
+IDENFR c
+<因子>
+<项>
+MINU -
+IDENFR b
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+IDENFR a
+ASSIGN =
+IDENFR d
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+IDENFR e
+ASSIGN =
+IDENFR a
+<因子>
+<项>
+PLUS +
+IDENFR d
+<因子>
+<项>
+<表达式>
+<赋值语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR a
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR b
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR c
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR d
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+PRINTFTK printf
+LPARENT (
+IDENFR e
+<因子>
+<项>
+<表达式>
+RPARENT )
+<写语句>
+SEMICN ;
 <语句>
 <语句列>
 <复合语句>

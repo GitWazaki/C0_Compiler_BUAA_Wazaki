@@ -102,8 +102,6 @@ namespace MidIR {
 		bool show = false;
 		int target_val, a_val, b_val, ans;
 		bool target_has_val = false, a_has_val = false, b_has_val = false, has_ans = false;
-		string dup{};
-		bool has_dup = false;
 		int line_num_in_block = -1;
 		
 		void init();
@@ -116,28 +114,29 @@ namespace MidIR {
 		bool changeJumpTarget(string label);
 
 		void constReplace(string reg,int value);
-		void copyReplace(string reg, string dup);
-		void setDup();
 		bool ansComputable();
 		void compute();
 		void optimize();
 		
-		bool isGlobal();
+		
 		bool isLoad_target();
 		bool isLoad_a();
 		bool isLoad_b();
 		bool isSave_target();
 		bool isSave_a();
 		bool isSave_b();
+		bool isGlobal();
 		bool isArrMemory();
+		bool isInput();
 		bool isJump();
-		
+		bool isMemorySave();
+		bool doNotPraga();
+
 	};
 
 	inline void MidInstr::init() {
 		initNumber();
 		initGlobal();
-		has_dup = false;
 	}
 
 	inline void MidInstr::initNumber() {
@@ -158,7 +157,7 @@ namespace MidIR {
 	inline void MidInstr::initGlobal() {
 		if(isGlobal()) {
 			if(!var_name.empty()) {
-				var_name = FORMAT("_G_{}", var_name);
+				var_name = FORMAT("_G{}", var_name);
 			}
 		}
 	}
@@ -302,43 +301,6 @@ namespace MidIR {
 		if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
 			has_ans = true;
 			ans = value;
-		}
-	}
-
-	inline void MidInstr::copyReplace(string reg, string dup) {
-		if (reg == target) {
-			target = dup;
-		}
-		if (reg == source_a) {
-			source_a = dup;
-		}
-		if (reg == source_b) {
-			source_b = dup;
-		}
-		if (midOp == LOAD_STACK || midOp == LOAD_GLOBAL) {
-			if(var_name == reg) {
-				has_dup = true;
-				this->dup = dup;
-			}
-		}
-		else if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
-			if (var_name == reg) {
-				has_dup = true;
-				this->dup = dup;
-			}
-		}
-	}
-
-	inline void MidInstr::setDup() {
-		if (!has_dup) {
-			if (midOp == LOAD_STACK || midOp == LOAD_GLOBAL) {
-				has_dup = true;
-				dup = target;
-			}
-			else if (midOp == SAVE_GLOBAL || midOp == SAVE_STACK) {
-				has_dup = true;
-				dup = target;
-			}
 		}
 	}
 
@@ -574,6 +536,18 @@ namespace MidIR {
 		}
 	}
 
+	inline bool MidInstr::isInput() {
+		switch (midOp) {
+		case SCAN_INT:
+		case SCAN_CHAR:
+		case SCAN_GLOBAL_INT:
+		case SCAN_GLOBAL_CHAR:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	inline bool MidInstr::isJump() {
 		switch (midOp) {
 		case BGEZ:
@@ -591,6 +565,10 @@ namespace MidIR {
 		default:
 			return false;
 		}
+	}
+
+	inline bool MidInstr::doNotPraga() {
+		return isGlobal() || isArrMemory() || isInput();
 	}
 
 }

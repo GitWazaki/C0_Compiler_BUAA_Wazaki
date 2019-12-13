@@ -3,27 +3,60 @@
 .text
 j main
 
-#function here
 main:
 move $fp, $sp
-addi $sp, $sp, -8
-li $t0, 1
-move $t1, $t0
-for_1_start:
-move $t0, $t1
-li $t2, 10
-bge $t0, $t2, for_1_end
-for_1_body:
-move $t3, $t1
-move $t4, $t1
-addu $t5, $t3, $t4
-move $t3, $t5
-move $t3, $t1
-li $t4, 1
-addu $t5, $t3, $t4
-move $t1, $t5
-move $t0, $t1
-li $t2, 10
-blt $t0, $t2, for_1_body
-for_1_end:
+li $v0, 5
+syscall
+sw $v0, 0($gp)
+lw $t0, 0($gp)
+sw $t0, 4($gp)
+lw $t0, 0($gp)
+lw $t1, 4($gp)
+addu $t2, $t0, $t1
+sw $t2, 8($gp)
+lw $t0, 8($gp)
+lw $t1, 4($gp)
+subu $t2, $t0, $t1
+sw $t2, 12($gp)
+lw $t0, 12($gp)
+sw $t0, 0($gp)
+lw $t0, 0($gp)
+lw $t1, 12($gp)
+addu $t2, $t0, $t1
+sw $t2, 16($gp)
+lw $t0, 0($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 4($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 8($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 12($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+lw $t0, 16($gp)
+move $a0, $t0
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
 _RETURN_main:

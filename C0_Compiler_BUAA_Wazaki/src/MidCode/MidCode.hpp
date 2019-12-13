@@ -563,5 +563,20 @@ namespace MidIR {
 	}
 
 #pragma endregion 
+#define ForFuncs(i, _funcs, func)  \
+	for (int i = 0; i < _funcs.size(); i++) {	\
+		auto& funcs = _funcs;\
+		auto& func = funcs[i];
 
+#define ForBlocks(i, _blocks, block) \
+	for (int i = 0; i < _blocks->size(); i++) {		\
+		auto& blocks = _blocks;	\
+		auto& block = blocks->at(i);
+
+#define ForInstrs(i, _instrs, instr) \
+	for (int i = 0; i < _instrs.size(); i++) {	\
+		auto& instrs = _instrs;	\
+		auto& instr = instrs[i];
+
+#define EndFor }
 }

@@ -1,33 +1,43 @@
 // C0_Compiler_BUAA_Wazaki gen Mid Code
 
 
-function main start
+__function main start__
   Block main
   $fp = $sp;
-  VAR int i;
-  VAR int temp;
-  push 8B;
   push $ra;
-  T0 = 1;
-  i = T0;
-  Block for_1_start
-  T1 = i;
-  T2 = 10;
-  if (T1 >= T2) jump for_1_end
-  Block for_1_body
-  T3 = i;
-  T4 = i;
-  T5 = T3 + T4;
-  temp = T5;
-  T6 = i;
-  T7 = 1;
-  T8 = T6 + T7;
-  i = T8;
-  T1 = i;
-  T2 = 10;
-  if (T1 < T2) jump for_1_body
-  Block for_1_end
+  scanf(_Ga);
+  T0 = _Ga;
+  _Gb = T0;
+  T1 = _Ga;
+  T2 = _Gb;
+  T3 = T1 + T2;
+  _Gc = T3;
+  T4 = _Gc;
+  T5 = _Gb;
+  T6 = T4 - T5;
+  _Gd = T6;
+  T7 = _Gd;
+  _Ga = T7;
+  T8 = _Ga;
+  T9 = _Gd;
+  T10 = T8 + T9;
+  _Ge = T10;
+  T11 = _Ga;
+  print(T11);
+  print('\n')
+  T12 = _Gb;
+  print(T12);
+  print('\n')
+  T13 = _Gc;
+  print(T13);
+  print('\n')
+  T14 = _Gd;
+  print(T14);
+  print('\n')
+  T15 = _Ge;
+  print(T15);
+  print('\n')
   Block _RETURN_main
   pop $raB;
-end funciton
+__end funciton__
 

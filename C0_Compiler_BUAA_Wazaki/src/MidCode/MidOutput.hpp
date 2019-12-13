@@ -67,13 +67,13 @@ namespace MidIR {
 
 	inline void MidOutput::outputFunc(Func& func) {
 		write("");
-		write(FORMAT("function {} start", func.func_name));
+		write(FORMAT("__function {} start__", func.func_name));
 		pushIndent();
 		for(int i = 0; i < func.blocks->size(); i++) {
 			outputBlock(func.blocks->at(i));
 		}
 		popIndent();
-		write("end funciton");
+		write("__end funciton__");
 	}
 
 	inline void MidOutput::outputBlock(Block& block) {
@@ -88,12 +88,9 @@ namespace MidIR {
 		instr.target = removePrefix(instr.target);
 		instr.source_a = removePrefix(instr.source_a);
 		instr.source_b = removePrefix(instr.source_b);
-		instr.dup = removePrefix(instr.dup);
 
 		bool showVarName = instr.var_name.size() > 0;
 
-		// write(FORMAT("{} {}, {}, {}",instr.midOp,instr.target,instr.source_a,instr.source_b));
-		
 		switch (instr.midOp) {
 		case MidInstr::PRINT_LINE:
 			write("print('\\n')");
@@ -102,11 +99,7 @@ namespace MidIR {
 		case MidInstr::PRINT_INT:
 		case MidInstr::PRINT_CHAR:
 			if (showVarName) {
-				// if(instr.has_dup) {
-				// 	write(FORMAT("scanf({});", instr.dup));
-				// } else {
-					write(FORMAT("scanf({});", instr.var_name));
-				// }
+				write(FORMAT("scanf({});", instr.var_name));
 				break;
 			}
 			write(FORMAT("print({});", instr.target));
@@ -116,11 +109,7 @@ namespace MidIR {
 		case MidInstr::SCAN_INT:
 		case MidInstr::SCAN_CHAR:
 			if (showVarName) {
-				// if(instr.has_dup) {
-				// 	write(FORMAT("scanf({});", instr.dup));
-				// } else {
-					write(FORMAT("scanf({});", instr.var_name));
-				// }
+				write(FORMAT("scanf({});", instr.var_name));
 				break;
 			}
 			write(FORMAT("scanf({});", instr.target));
@@ -170,54 +159,30 @@ namespace MidIR {
 		case MidInstr::BLEZ:
 			write(FORMAT("if ({} <= 0) jump {}", instr.target, instr.source_a));
 			break;
-			
-		// case MidInstr::LOAD_LABEL:
-		// case MidInstr::SAVE_LABEL:
-		// case MidInstr::LOAD_LAB_IMM:
-		// case MidInstr::SAVE_LAB_IMM:
 		case MidInstr::LOAD_GLOBAL:
 			if(showVarName) {
-				// if(instr.has_dup) {
-				// 	write(FORMAT("{} = {};", instr.target, instr.dup));
-				// } else {
-					write(FORMAT("{} = {};", instr.target, instr.var_name));
-				// }
+				write(FORMAT("{} = {};", instr.target, instr.var_name));
 			} else {
 				write(FORMAT("{} = $gp[{}];", instr.target, instr.source_a));
 			}
 			break;
 		case MidInstr::SAVE_GLOBAL:
 			if (showVarName) {
-				// if (instr.has_dup) {
-				// 	write(FORMAT("{} = {};", instr.dup, instr.target));
-				// }
-				// else {
-					write(FORMAT("{} = {};", instr.var_name, instr.target));
-				// }
+				write(FORMAT("{} = {};", instr.var_name, instr.target));
 			} else {
 				write(FORMAT("$gp[{}] = {};", instr.source_a, instr.target));
 			}
 			break;
 		case MidInstr::LOAD_STACK:
 			if (showVarName) {
-				// if (instr.has_dup) {
-				// 	write(FORMAT("{} = {};", instr.target, instr.dup));
-				// }
-				// else {
-					write(FORMAT("{} = {};", instr.target, instr.var_name));
-				// }
+				write(FORMAT("{} = {};", instr.target, instr.var_name));
 			} else {
 				write(FORMAT("{} = $sp[{}];", instr.target, instr.source_a));
 			}
 			break;
 		case MidInstr::SAVE_STACK:
 			if (showVarName) {
-				// if (instr.has_dup) {
-				// 	write(FORMAT("{} = {};", instr.dup, instr.target));
-				// }
-				// else {
-					write(FORMAT("{} = {};", instr.var_name, instr.target));
-				// }
+				write(FORMAT("{} = {};", instr.var_name, instr.target));
 			} else {
 				write(FORMAT("$sp[{}] = {};", instr.source_a, instr.target));
 			}
@@ -286,14 +251,11 @@ namespace MidIR {
 	inline string MidOutput::removePrefix(string name) {
 		if(startWith(name, "_STRING_")) {
 			name = name.substr(8);
-		} else if(startWith(name, "_GLOBAL_")) {
-			name = name.substr(12);
+		} else if(startWith(name, "_G")) {
+			name = name.substr(1);
 		} else if (startWith(name, "_T")){
 			name = name.substr(1);
 		}
-		// else if (name == "$v0") {
-		// 	
-		// }
 		return name;
 	}
 

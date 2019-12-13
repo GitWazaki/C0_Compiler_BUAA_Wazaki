@@ -1,7 +1,7 @@
 #pragma once
 #include "../MidCode/MidInstr.hpp"
 #include "RegPool.hpp"
-#include "../meow/meow.hpp"
+#include "../tools/meow.hpp"
 
 using namespace std;
 
@@ -106,7 +106,6 @@ namespace GenObject {
 	
 	inline void GenMips::genFunc(MidIR::Func func) {
 		write("");
-		write("#function here");
 		cur_func_name = func.func_name;
 		auto& blocks = *(func.blocks);
 		for (int i = 0; i < blocks.size(); i++) {
@@ -374,28 +373,28 @@ namespace GenObject {
 			break;
 		case MidIR::MidInstr::BGT:
 			if (isNumber(instr.target)) {
-				write(FORMAT("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				write(FORMAT("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
 				break;
 			}
 			write(FORMAT("bgt {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BGE:
 			if (isNumber(instr.target)) {
-				write(FORMAT("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				write(FORMAT("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b));
 				break;
 			}
 			write(FORMAT("bge {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BLT:
 			if (isNumber(instr.target)) {
-				write(FORMAT("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				write(FORMAT("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b));
 				break;
 			}
 			write(FORMAT("blt {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
 		case MidIR::MidInstr::BLE:
 			if (isNumber(instr.target)) {
-				write(FORMAT("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b));
+				write(FORMAT("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b));
 				break;
 			}
 			write(FORMAT("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b));

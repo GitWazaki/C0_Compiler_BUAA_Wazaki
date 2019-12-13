@@ -1,12 +1,14 @@
 #pragma once
+#include "Flow.hpp"
 #include "constHelper.hpp"
 #include "copyHelper.hpp"
-#include "Flow.hpp"
+#include "DeadHelper.hpp"
+#include "BlockHelper.hpp"
 #include "ReachingDefine.hpp"
 #include "Struct.hpp"
 #include "ActiveRange.hpp"
 #include "Conflict.hpp"
-#include "FuncInline.hpp"
+#include "InlineHelper.hpp"
 
 
 using namespace std;
@@ -27,7 +29,6 @@ namespace MidIR {
 		void insertBefore(vector<MidInstr>& instrs, int& i, MidInstr instr);
 		void insertAfter(vector<MidInstr>& instrs, int& i, MidInstr instr);
 		void deleteInstr(vector<MidInstr>& instrs, int& i, MidInstr instr);
-		MidInstr getJumpInstr(Block& block);
 		
 		//methods
 		void removeUselessRa();
@@ -37,9 +38,13 @@ namespace MidIR {
 		void constReplace();
 		void copyPropagation();
 		
-		FlowGraph buildFlowGraph(Func& func);
+		void removeDeadCode();
+
+		void mergeBlocks();
+		
 		void buildIdentRange();
-		bool checkDef(Block block, int line, string def);
+		bool checkDef(Block block, int line, string def);	// no use
+		
 		
 		void funcsInline();
 
@@ -53,8 +58,13 @@ namespace MidIR {
 		
 		funcsInline();
 
-		// constReplace();
-		// copyPropagation();
+		mergeBlocks();
+
+		constReplace();
+		copyPropagation();
+
+		removeDeadCode();
+		
 		
 		buildIdentRange();
 		
@@ -63,20 +73,6 @@ namespace MidIR {
 	}
 
 #pragma region tools
-
-#define ForFuncs(i, _funcs, func) auto& funcs = _funcs; \
-	for (int i = 0; i < funcs.size(); i++) {	\
-		auto& func = funcs[i];
-
-#define ForBlocks(i, _blocks, block) auto& blocks = _blocks;	\
-	for (int i = 0; i < blocks->size(); i++) {		\
-		auto& block = blocks->at(i);
-
-#define ForInstrs(i, _instrs, instr) auto& instrs = _instrs;	\
-	for (int i = 0; i < instrs.size(); i++) {	\
-		auto& instr = instrs[i];
-
-#define EndFor }
 
 #define needAssign(reg) !reg.empty() && !startWith(reg, string("$"))
 	
@@ -93,17 +89,7 @@ namespace MidIR {
 	inline void Optimizer::deleteInstr(vector<MidInstr>& instrs, int& i, MidInstr instr) {
 		instrs.erase(instrs.begin() + i);
 	}
-
-	inline MidInstr Optimizer::getJumpInstr(Block& block) {
-		MidInstr nop = MidInstr(MidInstr::NOP);
-		if (!block.instrs.empty()) {
-			MidInstr last = block.instrs.back();
-			if (last.isJump()) {
-				return last;
-			}
-		}	
-		return nop;
-	}
+	
 #pragma endregion
 
 #pragma region removeRa
@@ -113,7 +99,7 @@ namespace MidIR {
 				removeRa(func);
 			}
 		EndFor
-		removeRa(funcs.back());
+		removeRa(midCodes.funcs.back());
 	}
 
 	inline bool Optimizer::noCallInFunc(Func func) {
@@ -152,40 +138,37 @@ namespace MidIR {
 	}
 
 	inline void Optimizer::copyPropagation() {
-		ForFuncs(i, midCodes.funcs, func)
-			ForBlocks(j, func.blocks, block)
-				copyHelper copyHelper;
-				ForInstrs(k, block.instrs, instr)
-					copyHelper.instrCopyPrapa(instr);
-				EndFor
-			EndFor
-		EndFor
+		copyHelper copyHelper(midCodes);
+		midCodes = copyHelper.CopyPrapa();
 	}
+
 #pragma endregion
+
+#pragma region removeDeadCode
+	
+	inline void Optimizer::removeDeadCode() {
+		DeadHelper deadHelper(midCodes);
+		midCodes = deadHelper.removeDeadCode();
+	}
+
+#pragma endregion
+
+#pragma region blockMerge
+
+	inline void Optimizer::mergeBlocks() {
+		BlockHelper blockHelper(midCodes);
+		midCodes = blockHelper.mergeBlock();
+	}
+
+#pragma endregion 
+	
 	
 #pragma region dataFlowAnylsis	
-	inline FlowGraph Optimizer::buildFlowGraph(Func& func) {
-		FlowGraph flowGraph;
-		// ForFuncs(i, midCodes.funcs, func)
-			ForBlocks(j, func.blocks, block)
-				flowGraph.addBlockNum(block.label, j);
-				if(j + 1 < blocks->size()) { // 最后一个block为总的return label
-					MidInstr jumpInstr = getJumpInstr(block);
-					if (jumpInstr.midOp != MidInstr::NOP && jumpInstr.midOp != MidInstr::CALL) {// 非函数调用的跳转
-						flowGraph.connectBlocks(block.label, jumpInstr.getJumpTarget());
-					}
-					if (jumpInstr.midOp != MidInstr::JUMP) { // 如果不是无条件跳转，将前后block连接
-						flowGraph.connectBlocks(blocks->at(j).label, blocks->at(j + 1).label);
-					}
-				}
-			EndFor
-		// EndFor
-		return flowGraph;
-	}
 
 	inline void Optimizer::buildIdentRange() {
 		ForFuncs(i, midCodes.funcs, func)
-			FlowGraph flow_graph = buildFlowGraph(func);
+			FlowHelper flowHelper;
+			FlowGraph flow_graph = flowHelper.buildFlowGraphInFunc(func);
 			ConflictGraph conflictGraph;
 			ForBlocks(block_num, func.blocks, block)
 				ForInstrs(line_num, block.instrs, instr)
@@ -198,9 +181,6 @@ namespace MidIR {
 					}
 					vector<string> saves = instr.getSaves();
 					for (string save : saves) {
-						// if (needAssign(save) && checkDef(block,line_num,save)) {
-						// 	conflictGraph.addDef(block_num, block.label, line_num, save);
-						// }
 						if (needAssign(save)) {
 							conflictGraph.addDef(block_num, block.label, line_num, save);
 						}
@@ -233,7 +213,7 @@ namespace MidIR {
 #pragma endregion
 
 
-#pragma func_inline
+#pragma region  func_inline
 
 	inline void Optimizer::funcsInline() {
 		inlineHelper inlineHelper(midCodes);
@@ -241,7 +221,9 @@ namespace MidIR {
 	}
 
 #pragma endregion 
-	
+
+
+#pragma region test
 	void Optimizer::unitTestDefineUseChain() {
 		FlowGraph flow_graph;
 		flow_graph.connectBlocks("B1", "B2");
@@ -284,5 +266,6 @@ namespace MidIR {
 		define_use_chain.genConfict(flow_graph);
 		define_use_chain.printConfictGraph();
 	}
+#pragma endregion 
 	
 }

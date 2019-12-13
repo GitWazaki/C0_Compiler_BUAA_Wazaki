@@ -1,5 +1,5 @@
 #pragma once
-#include "../meow/meow.hpp"
+#include "../tools/meow.hpp"
 
 using namespace std;
 
@@ -40,22 +40,6 @@ namespace MidIR {
 		string getInlineTempNameWithCnt(string func_name, string ident, int index, int cnt);
 		
 	};
-	
-#pragma region for_define
-	
-#define ForFuncs(i, _funcs, func) auto& funcs = _funcs; \
-	for (int i = 0; i < funcs.size(); i++) {	\
-		auto& func = funcs[i];
-
-#define ForBlocks(i, _blocks, block) auto& blocks = _blocks;	\
-	for (int i = 0; i < blocks->size(); i++) {		\
-		auto& block = blocks->at(i);
-
-#define ForInstrs(i, _instrs, instr) auto& instrs = _instrs;	\
-	for (int i = 0; i < instrs.size(); i++) {	\
-		auto& instr = instrs[i];
-
-#define EndFor }
 	
 #pragma endregion
 

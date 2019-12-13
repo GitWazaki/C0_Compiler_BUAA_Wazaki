@@ -9,7 +9,7 @@
 #include <map>
 #include <set>
 
-#include "src/meow/meow.hpp"
+#include "src/tools/meow.hpp"
 #include "src/token.hpp"
 #include "src/Error.hpp"
 #include "src/SymbolTable.hpp"

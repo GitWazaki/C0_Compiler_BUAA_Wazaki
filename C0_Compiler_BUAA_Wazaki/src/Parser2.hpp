@@ -1094,7 +1094,6 @@ namespace Parser2 {
 					// addr = getArrAddr(ident.val, expr_val);
 					// midCodes.exprPushObj_Stack_Arr(addr);
 					pushArr(ident.val, expr_reg);
-					midCodes.saveVarName(ident.val);
 					
 					goto facotr_end;
 				}
@@ -1680,7 +1679,6 @@ namespace Parser2 {
 		} else {
 			midCodes.addInstr({ MidIR::MidInstr::PUSH_REG, reg_name, func_name, index });
 		}
-		// symbolTable.addScopeOffset(4);
 	}
 
 	void Parser2::popRegFromStack(string reg_name, string func_name, int index) {
@@ -1690,19 +1688,20 @@ namespace Parser2 {
 		else {
 			midCodes.addInstr({ MidIR::MidInstr::POP_REG,reg_name, func_name, index });
 		}
-		// symbolTable.subScopeOffset(4);
 	}
 
 	void Parser2::assignToIdent(string ans_reg, string ident) {
 		if (symbolTable.checkSymbolIsGlobal(ident)) {
 			midCodes.addInstr(
 				{ MidIR::MidInstr::SAVE_GLOBAL, ans_reg, symbolTable.getGlobalOffsetBytesByIdent(ident) });
+			midCodes.saveVarName(FORMAT("_G{}", ident));
 		}
 		else {
 			midCodes.addInstr(
 				{ MidIR::MidInstr::SAVE_STACK, ans_reg, symbolTable.getStackOffsetBytesByIdent(ident) });
+			midCodes.saveVarName(ident);
 		}
-		midCodes.saveVarName(ident);
+		
 	}
 
 	void Parser2::exprPushIdent(token token) {
@@ -1715,7 +1714,7 @@ namespace Parser2 {
 			}
 		} else if (symbolTable.checkSymbolIsGlobal(token.val)) {
 			midCodes.exprPushObj_GlobalVar(token.val,symbolTable.getGlobalOffsetBytesByIdent(token.val));
-			midCodes.saveVarName(token.val);
+			midCodes.saveVarName(FORMAT("_G{}", token.val));
 		} else {
 			midCodes.exprPushObj_StackVar(token.val, symbolTable.getStackOffsetBytesByIdent(token.val));
 			midCodes.saveVarName(token.val);
@@ -1730,6 +1729,7 @@ namespace Parser2 {
 			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
 				midCodes.addInstr({ MidIR::MidInstr::SCAN_GLOBAL_CHAR,symbolTable.getGlobalOffsetBytesByIdent(symbol.getName()) });
 			}
+			midCodes.saveVarName(FORMAT("_G{}", symbol.getName()));
 		} else {
 			if (symbol.getType() == Symbol::SymbolType::INT) {
 				midCodes.addInstr({ MidIR::MidInstr::SCAN_INT,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
@@ -1737,8 +1737,9 @@ namespace Parser2 {
 			else if (symbol.getType() == Symbol::SymbolType::CHAR) {
 				midCodes.addInstr({ MidIR::MidInstr::SCAN_CHAR,symbolTable.getStackOffsetBytesByIdent(symbol.getName()) });
 			}
+			midCodes.saveVarName(symbol.getName());
 		}
-		midCodes.saveVarName(symbol.getName());
+		
 	}
 
 	// inline string Parser2::getArrAddr(string arr_name, string expr_reg) {
@@ -1763,9 +1764,11 @@ namespace Parser2 {
 	void Parser2::pushArr(string arr_name, string sub_reg) {
 		if (symbolTable.checkSymbolIsGlobal(arr_name)) {
 			midCodes.exprPushObj_GLOBAL_Arr(symbolTable.getGlobalOffsetBytesByIdent(arr_name), sub_reg);
+			midCodes.saveVarName(FORMAT("_G{}", arr_name));
 		}
 		else {
 			midCodes.exprPushObj_Stack_Arr(symbolTable.getStackOffsetBytesByIdent(arr_name), sub_reg);
+			midCodes.saveVarName(arr_name);
 		}
 	}
 

@@ -1,7 +1,15 @@
+int a,b,c,d,e;
+
 void main(){
-	int i;
-	int temp;
-	for(i=1;i<10;i=i+1){
-		temp = i + i;
-	}
+	scanf(a);
+	b = a;
+	c = a + b;
+	d = c - b;
+	a = d;
+	e = a + d;
+	printf(a);
+	printf(b);
+	printf(c);
+	printf(d);
+	printf(e);
 }
