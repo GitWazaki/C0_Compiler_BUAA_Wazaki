@@ -5,11 +5,12 @@ namespace MidIR {
 	class ReachingDefine {
 
 		map<string, set<string>> gen, kill, in, out;
-		set<string> blockNames;
+		set<string> block_names;
 
 	public:
 		void addGens(string block_name, vector<string> gens);
 		void addKills(string block_name, vector<string> kills);
+		void addBlockName(string block_name);
 
 		set<string>& getInByBlock(string block);
 		set<string>& getOutByBlock(string block);
@@ -21,17 +22,21 @@ namespace MidIR {
 	};
 
 	inline void ReachingDefine::addGens(string block_name, vector<string> gens) {
-		blockNames.insert(block_name);
+		block_names.insert(block_name);
 		for (string obj : gens) {
 			gen[block_name].insert(obj);
 		}
 	}
 
 	inline void ReachingDefine::addKills(string block_name, vector<string> kills) {
-		blockNames.insert(block_name);
+		block_names.insert(block_name);
 		for (string obj : kills) {
 			kill[block_name].insert(obj);
 		}
+	}
+
+	inline void ReachingDefine::addBlockName(string block_name) {
+		block_names.insert(block_name);
 	}
 
 	inline set<string>& ReachingDefine::getInByBlock(string block) {
@@ -49,12 +54,12 @@ namespace MidIR {
 			last_kill = kill;
 			last_in = in;
 			last_out = out;
-			for (string block_name : blockNames) {
+			for (string block_name : block_names) {
 				// º∆À„inºØ∫œ in[B] = U(out[preBlocks])
 				vector<string> pre_blocks = flowGraph.getPreBlocks(block_name);
 				set<string> preOuts{};
 				for (int i = 0; i < pre_blocks.size(); i++) {
-					blockNames.insert(pre_blocks[i]);
+					block_names.insert(pre_blocks[i]);
 					preOuts = setOr(preOuts, out[pre_blocks[i]]);
 				}
 				in[block_name] = preOuts;
@@ -70,7 +75,7 @@ namespace MidIR {
 	}
 
 	inline void ReachingDefine::printInOut() {
-		for (auto i = blockNames.begin(); i != blockNames.end(); i++) {
+		for (auto i = block_names.begin(); i != block_names.end(); i++) {
 			const string& block_name = *i;
 
 			print("Gen[{}]: ", block_name);

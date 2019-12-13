@@ -6,7 +6,7 @@
 #include <cmath>
 
 #define FORMAT meow::helper::format
-
+using namespace std;
 #define print(...)                \
     do {                            \
         std::cout << FORMAT(__VA_ARGS__);        \
@@ -83,6 +83,15 @@ bool notFound(C& container, I item) {
 template<typename C, typename I>
 bool Found(C& container, I item) {
 	return !notFound(container, item);
+}
+
+template <typename T>
+int getSubIndex(vector<T> container, T x) {
+	for (int i = 0; i < container.size(); i++) {
+		if (container[i] == x)
+			return i;
+	}
+	return -1;
 }
 
 template<typename T>

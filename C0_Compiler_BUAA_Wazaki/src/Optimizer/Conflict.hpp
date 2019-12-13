@@ -11,11 +11,11 @@ namespace MidIR {
 
 		ReachingDefine reaching_define;
 		
-		map<string, set<Node>> ident_to_defs, ident_to_uses;
+		map<string, set<Node>> ident_defs_map, ident_uses_map;
 		set<string> idents;
 		
-		map<string, set<Web>> ident_to_webs;
-		map<string, ActiveRange> ident_to_range;
+		map<string, set<Web>> ident_webs_map;
+		map<string, ActiveRange> ident_range_map;
 
 	public:
 		void addDef(int block_num, string block_name, int number, string ident);
@@ -23,11 +23,14 @@ namespace MidIR {
 		void reAddDef();
 		
 		void genConfict(FlowGraph& flow_graph);
-		void genWeb(string ident);
+		void genWeb(string ident, FlowGraph& flow_graph);
 		ActiveRange genRange(string ident);
 		ActiveRange rangeMerge(ActiveRange r1, ActiveRange r2);
 
-		map<string, ActiveRange> getRanges();
+		vector<ActiveRange> getLoops(FlowGraph& flow_graph);
+		void fixChainLoop(Chain& chain, vector<ActiveRange>& loops);
+
+		map<string, ActiveRange> getRangeMap();
 
 		void printConfictGraph();
 		
@@ -37,26 +40,26 @@ namespace MidIR {
 		idents.insert(ident);
 		Node new_node{ block_num, block_name, number };
 
-		set<Node> def_nodes = ident_to_defs[ident];
+		set<Node> def_nodes = ident_defs_map[ident];
 		for (Node def_node : def_nodes) {
 			if (def_node != new_node) {
 				reaching_define.addKills(block_name, { def_node.toString() });
 			}
 		}
-		ident_to_defs[ident].insert(new_node);
+		ident_defs_map[ident].insert(new_node);
 		reaching_define.addGens(block_name, { new_node.toString() });
 	}
 
 	inline void ConflictGraph::addUse(int block_num, string block_name, int number, string ident) {
 		idents.insert(ident);
 		Node new_node{ block_num, block_name, number };
-
-		ident_to_uses[ident].insert(new_node);
+		ident_uses_map[ident].insert(new_node);
+		reaching_define.addBlockName(block_name);
 	}
 
 	inline void ConflictGraph::reAddDef() {
 		for (string ident : idents) {
-			set<Node> def_nodes = ident_to_defs[ident];
+			set<Node> def_nodes = ident_defs_map[ident];
 			for (Node node_i : def_nodes) {
 				for(Node node_j : def_nodes) {
 					if (node_i != node_j) {
@@ -71,18 +74,17 @@ namespace MidIR {
 		reAddDef();
 		reaching_define.build(flow_graph);
 		for (auto ident : idents) {
-			genWeb(ident);
+			genWeb(ident,flow_graph);
 		}
 		for (auto ident : idents) {
-			cout << ident;
-			ident_to_range[ident] = genRange(ident);
+			ident_range_map[ident] = genRange(ident);
 		}
 	}
 
-	inline void ConflictGraph::genWeb(string ident) {
+	inline void ConflictGraph::genWeb(string ident, FlowGraph& flow_graph) {
 		
-		set<Node> defs = ident_to_defs[ident];
-		set<Node> uses = ident_to_uses[ident];
+		set<Node> defs = ident_defs_map[ident];
+		set<Node> uses = ident_uses_map[ident];
 		vector<Chain> chains;
 		vector<Web> webs;
 
@@ -100,6 +102,35 @@ namespace MidIR {
 				}
 			}
 		}
+
+		if (!(startWith(ident, string("_T")) && isdigit(ident[2]))) {
+			auto loops = getLoops(flow_graph);
+			for (auto& chain : chains) {
+				fixChainLoop(chain, loops);
+			}
+		}
+
+		vector<Chain> old_chains;
+		do {
+			old_chains = chains;
+			for (int i = 0; i < chains.size(); i++) {
+				for (int j = 0; j < chains.size(); j++) {
+					if (i != j && chains[i].overlap(chains[j])) {
+						if (chains[i].def < chains[j].def) {
+							chains[i].chainMerge(chains[j]);
+							chains.erase(chains.begin() + j);
+						}
+						else {
+							chains[j].chainMerge(chains[i]);
+							chains.erase(chains.begin() + i);
+						}
+						goto outside_merge_chains;
+					}
+				}
+			}
+		outside_merge_chains:;
+		} while (old_chains != chains);
+		
 		// 对于chains中每一条建好的def-uses链，判断能否加入到webs网络的每一条web中去
 		for (int i = 0; i < chains.size(); i++) {
 			bool new_one = true;
@@ -118,9 +149,10 @@ namespace MidIR {
 				webs.push_back(web);
 			}
 		}
-		int old_size;
+		
+		vector<Web> old_web;
 		do {	//循环合并webs中的每一个web，直至不能合并
-			old_size = webs.size();
+			old_web = webs;
 			for(int i = 0; i < webs.size(); i++) {
 				for (int j = 0; j < webs.size(); j++) {
 					Web& web1 = webs[i];
@@ -136,25 +168,24 @@ namespace MidIR {
 				}
 			}
 		restart:;
-		} while(old_size != webs.size());
+		} while(old_web != webs);
 		
 		//为每一个变量ident设置它的webs
 		for (Web& web : webs) {
 			web.sort();
-			ident_to_webs[ident].insert(web);
+			ident_webs_map[ident].insert(web);
 		}
 		
 	}
 
 	inline ActiveRange ConflictGraph::genRange(string ident) {
-		set<Web> webs = ident_to_webs[ident];
+		set<Web> webs = ident_webs_map[ident];
 
-		if (webs.empty()) {
+		if (webs.empty()) {	//全局变量，在block中没有def，所以webs为空
 			return ActiveRange(Node(0, "Global", 0), Node(INT32_MAX, "Global", INT32_MAX));
 		}
 		
 		ActiveRange range(webs.begin()->chains.begin()->def);
-
 		for(Web web : webs) {
 			for(Chain chain : web.chains) {
 				range = rangeMerge(range, { chain.def });
@@ -163,7 +194,6 @@ namespace MidIR {
 				}
 			}
 		}
-
 		return range;
 	}
 
@@ -171,8 +201,42 @@ namespace MidIR {
 		return ActiveRange(min(r1.first, r2.first), max(r1.last, r2.last));
 	}
 
-	inline map<string, ActiveRange> ConflictGraph::getRanges() {
-		return ident_to_range;
+	inline vector<ActiveRange> ConflictGraph::getLoops(FlowGraph& flow_graph) {
+		vector<ActiveRange> loops;
+		for (auto edge : flow_graph.getFollowBlocksMap()) {	//edge block_name to vector<follow block name>
+			string from_block_name = edge.first;
+			for (string to_block_name : edge.second) {
+				int from_block_num = flow_graph.getBlockNum(from_block_name);
+				int to_block_num = flow_graph.getBlockNum(to_block_name);
+				if (to_block_num <= from_block_num) {
+					loops.push_back(ActiveRange(Node(to_block_num, to_block_name, 0), Node(from_block_num, from_block_name, INT32_MAX)));
+				}
+			}
+		}
+		return loops;
+	}
+
+	inline void ConflictGraph::fixChainLoop(Chain& chain, vector<ActiveRange>& loops) {
+		bool change;
+		do {
+			change = false;
+			for (ActiveRange loop : loops) {
+				for (Node use : chain.uses) {
+					if (loop.checkIn(use.block_num, use.line_num) && getSubIndex(chain.uses, loop.last) == -1) {
+						chain.uses.push_back(loop.last);
+						change = true;
+						goto fixChainLoop_outside;
+					}
+				}
+			}
+		fixChainLoop_outside:;
+		} while (change);
+
+		chain.sort();
+	}
+
+	inline map<string, ActiveRange> ConflictGraph::getRangeMap() {
+		return ident_range_map;
 	}
 
 	inline void ConflictGraph::printConfictGraph() {
@@ -180,7 +244,7 @@ namespace MidIR {
 		reaching_define.printInOut();
 		for (auto i = idents.begin(); i != idents.end(); i++) {
 			print("{}: ", *i);
-			auto webs = ident_to_webs[*i];
+			auto webs = ident_webs_map[*i];
 			for (auto j = webs.begin(); j != webs.end(); j++) {
 				println("W{}", *j);
 			}

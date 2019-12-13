@@ -38,16 +38,15 @@ namespace MidIR {
 		BlocksPtr cur_blocks;
 
 		void addInstr(MidInstr instr) const;
-		void showVarName(string var_name);
+		void addInstrs(vector<MidInstr> instrs);
+		void saveVarName(string var_name);
 
 		// global define
 		int str_cnt = 0;
 		int temp_cnt = 0;
 		int after_ret_cnt = 0;
+		int after_call_cnt = 0;
 		string defineConstStr(string str);
-		void defineGlobalInt(string ident);
-		void defineGlobalIntArray(string ident, int len);
-		void addGlobalDefine(GlobalDefine);
 
 		// new label
 		void newBlock(string label);
@@ -80,21 +79,18 @@ namespace MidIR {
 		void printStrInstr(string lable);
 		void printReg(Symbol::SymbolType type,string expr_reg);
 		void printLineInstr();
-
-		// SAVE & LOAD
-		void saveStack(string reg, int offset);
-		void loadStack(string reg, int offset);
-
+		
 		//function
 		void defineFunc(string funcName);
 		void openStackSpace(int bytes);
 		void popStack(int size);
 		void addReturnInstr();
 		void callInstr(string funcName);
-		void pushRegInstr(string regName);
-		void popRegInstr(string regName);
+		void pushRegInstr(string regName);	// no use
+		void popRegInstr(string regName);	// no use
 		string getReturnLabel() const;
 		string getAfterReturnBlockName(string ret_name);
+		string getAfterCallBlockName(string call_func_name);
 		void moveReg(string target, string source);
 
 		//Ìø×ªÓï¾ä if for
@@ -121,15 +117,19 @@ namespace MidIR {
 		string getForStartName();
 		string getForBodyName();
 		string getForEndName();
-		string getCondJmpLoc();
+		string getStartLoc();
+		string getBodyLoc();
 		void defineWhile();
 		string getWhileName();
+		string getWhileBodyName();
 		string getWhileEndName();
 		void defineDoWhile();
 		string getDoWhileName();
 		string getDoWhileEndName();
+		vector<MidInstr> getCondInstrs(string block_name);
 		void jumpInstr(string label);
 		void genBranch(TokenType::tokenType cmpType, string lexprReg, string rexprReg);
+		void genBranchRet(TokenType::tokenType cmpType, string lexprReg, string rexprReg);
 		void endDefine();
 	};
 
@@ -137,34 +137,28 @@ namespace MidIR {
 		cur_blocks->back().addInstr(instr);
 	}
 
-	inline void MidCode::showVarName(string var_name) {
+	inline void MidCode::addInstrs(vector<MidInstr> instrs) {
+		for(auto instr : instrs) {
+			addInstr(instr);
+		}
+	}
+
+	inline void MidCode::saveVarName(string var_name) {
 		cur_blocks->back().instrs.back().var_name = var_name;
 	}
 
 #pragma region globaldefine
 	inline string MidCode::defineConstStr(string str) {
 		string str_label = getStrLabel(str);
-		addGlobalDefine(ConstStr{ str_label, str });
+		GlobalDefine item{ ConstStr{ str_label, str } };
+		global_defines.push_back(item);
 		return str_label;
 	}
 
-	inline void MidCode::defineGlobalInt(string identName) {
-		string label = getGlobalVarLabel(identName);
-		addGlobalDefine(GlobalDefine{ VarInt{label} });
-	}
-
-	inline void MidCode::defineGlobalIntArray(string ident, int len) {
-		string label = getGlobalArrLabel(ident);
-		addGlobalDefine(GlobalDefine{ VarIntArr{label,len} });
-	}
 #pragma endregion 
 
 	inline void MidCode::newBlock(string label) {
 		cur_blocks->push_back(Block(label));
-	}
-
-	inline void MidCode::addGlobalDefine(GlobalDefine item) {
-		global_defines.push_back(item);
 	}
 
 	inline string MidCode::getGlobalVarLabel(string identName) {
@@ -189,6 +183,10 @@ namespace MidIR {
 
 	inline string MidCode::getAfterReturnBlockName(string ret_name) {
 		return FORMAT("_AFTER_RETURN_{}_{}",ret_name, after_ret_cnt++);
+	}
+
+	inline string MidCode::getAfterCallBlockName(string call_func_name) {
+		return FORMAT("_AFTER_CALL_{}_{}", call_func_name, after_call_cnt++);
 	}
 
 	inline void MidCode::moveReg(string target, string source) {
@@ -362,8 +360,6 @@ namespace MidIR {
 #pragma region function
 	//function
 	inline void MidCode::defineFunc(string funcName) {
-		temp_cnt = 0;
-		after_ret_cnt = 0;
 		func_name = funcName;
 		funcs.push_back(Func(funcName));
 		cur_blocks = funcs.back().blocks;
@@ -376,9 +372,9 @@ namespace MidIR {
 	}
 
 	inline void MidCode::popStack(int size) {
-		if (size != 0) {
+		// if (size != 0) {
 			addInstr(MidInstr(MidInstr::POP, to_string(size)));
-		}
+		// }
 	}
 
 	inline void MidCode::addReturnInstr() {
@@ -440,7 +436,7 @@ namespace MidIR {
 		return FORMAT("for_{}_end", branch_stack.back().name_id);
 	}
 
-	inline string MidCode::getCondJmpLoc() {
+	inline string MidCode::getStartLoc() {
 		switch (branch_stack.back().type_define) {
 		case BranchDefine::IF_DEFINE:
 			return getIfElseName();
@@ -454,6 +450,16 @@ namespace MidIR {
 		}
 	}
 
+	inline string MidCode::getBodyLoc() {
+		switch (branch_stack.back().type_define) {
+		case BranchDefine::FOR_DEFINE:
+			return getForBodyName();
+		case BranchDefine::WHILE_DEFINE:
+			return getWhileBodyName();
+		default:break;
+		}
+	}
+
 	inline void MidCode::defineWhile() {
 		while_cnt++;
 		BranchDefine while_define{ BranchDefine::WHILE_DEFINE,while_cnt };
@@ -462,6 +468,10 @@ namespace MidIR {
 
 	inline string MidCode::getWhileName() {
 		return FORMAT("while_{}", branch_stack.back().name_id);
+	}
+
+	inline string MidCode::getWhileBodyName() {
+		return FORMAT("while_{}_body", branch_stack.back().name_id);
 	}
 
 	inline string MidCode::getWhileEndName() {
@@ -482,6 +492,18 @@ namespace MidIR {
 		return FORMAT("dowhile_{}_end", branch_stack.back().name_id);
 	}
 
+	inline vector<MidInstr> MidCode::getCondInstrs(string block_name) {
+		vector<MidInstr> condInstrs;
+		for(int i = 0; i < cur_blocks->size();i++) {
+			auto& block = cur_blocks->at(i);
+			if (block.label == block_name) {
+				condInstrs = block.instrs;
+			}
+		}
+		condInstrs.pop_back();	// pop old branch instr
+		return condInstrs;
+	}
+
 	inline void MidCode::jumpInstr(string label) {
 		addInstr(MidInstr(MidInstr::JUMP, label));
 	}
@@ -489,22 +511,47 @@ namespace MidIR {
 	inline void MidCode::genBranch(TokenType::tokenType cmpType, string lexprReg, string rexprReg) {
 		switch (cmpType) {
 		case TokenType::EQL:
-			addInstr(MidInstr(MidInstr::BNE, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BNE, lexprReg, rexprReg, getStartLoc()));
 			break;
 		case TokenType::NEQ:
-			addInstr(MidInstr(MidInstr::BEQ, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BEQ, lexprReg, rexprReg, getStartLoc()));
 			break;
 		case TokenType::GRE:
-			addInstr(MidInstr(MidInstr::BLE, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BLE, lexprReg, rexprReg, getStartLoc()));
 			break;
 		case TokenType::GEQ:
-			addInstr(MidInstr(MidInstr::BLT, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BLT, lexprReg, rexprReg, getStartLoc()));
 			break;
 		case TokenType::LSS:
-			addInstr(MidInstr(MidInstr::BGE, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BGE, lexprReg, rexprReg, getStartLoc()));
 			break;
 		case TokenType::LEQ:
-			addInstr(MidInstr(MidInstr::BGT, lexprReg, rexprReg, getCondJmpLoc()));
+			addInstr(MidInstr(MidInstr::BGT, lexprReg, rexprReg, getStartLoc()));
+			break;
+		default:
+			break;
+		}
+	}
+
+	inline void MidCode::genBranchRet(TokenType::tokenType cmpType, string lexprReg, string rexprReg) {
+		switch (cmpType) {
+		case TokenType::EQL:
+			addInstr(MidInstr(MidInstr::BEQ, lexprReg, rexprReg, getBodyLoc()));
+			break;
+		case TokenType::NEQ:
+			addInstr(MidInstr(MidInstr::BNE, lexprReg, rexprReg, getBodyLoc()));
+			break;
+		case TokenType::GRE:
+			addInstr(MidInstr(MidInstr::BGT, lexprReg, rexprReg, getBodyLoc()));
+			break;
+		case TokenType::GEQ:
+			addInstr(MidInstr(MidInstr::BGE, lexprReg, rexprReg, getBodyLoc()));
+			break;
+		case TokenType::LSS:
+			addInstr(MidInstr(MidInstr::BLT, lexprReg, rexprReg, getBodyLoc()));
+			break;
+		case TokenType::LEQ:
+			addInstr(MidInstr(MidInstr::BLE, lexprReg, rexprReg, getBodyLoc()));
 			break;
 		default:
 			break;

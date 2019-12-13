@@ -10,6 +10,8 @@ namespace MidIR {
 		string label;
 		vector<MidInstr> instrs;
 
+		Block() {};
+
 		Block(std::string label) : label(label) {
 			instrs.clear();
 		}

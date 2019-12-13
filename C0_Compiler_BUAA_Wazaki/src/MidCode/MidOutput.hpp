@@ -266,6 +266,16 @@ namespace MidIR {
 		case MidInstr::JUMP:
 			write(FORMAT("jump {};", instr.target));
 			break;
+		case MidInstr::DEF_VAR:
+			if(instr.source_b != "0") {
+				write(FORMAT("ARR {} {}[{}];", instr.target, instr.source_a, instr.source_b));
+			} else {
+				write(FORMAT("VAR {} {};", instr.target, instr.source_a));
+			}
+			break;
+		case MidInstr::DEF_PARA:
+			write(FORMAT("PARA {} {};", instr.target, instr.source_a));
+			break;
 		case MidInstr::MID_SHOW:
 			write(instr.target);
 			

@@ -7,16 +7,17 @@ namespace MidIR {
 
 	class DefUseNode {
 
+
 	public:
 
-		string block_name;
 		int block_num,  line_num;
+		string block_name;
 
 		DefUseNode() {};
 		DefUseNode(int block_num, string block,int num) : block_num(block_num), block_name(block), line_num(num) {}
 		
 		string toString() {
-			return FORMAT("<{}-{}, {}>", block_num, block_name, line_num);
+			return FORMAT("<{}:({},{})>", block_name, block_num, line_num);
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, DefUseNode& obj) {
@@ -24,15 +25,15 @@ namespace MidIR {
 		}
 
 		friend bool operator<(const DefUseNode& lhs, const DefUseNode& rhs) {
-			if (lhs.block_name < rhs.block_name)
-				return true;
-			if (rhs.block_name < lhs.block_name)
-				return false;
 			if (lhs.block_num < rhs.block_num)
 				return true;
 			if (rhs.block_num < lhs.block_num)
 				return false;
-			return lhs.line_num < rhs.line_num;
+			if (lhs.line_num < rhs.line_num)
+				return true;
+			if (rhs.line_num < lhs.line_num)
+				return false;
+			return lhs.block_name < rhs.block_name;
 		}
 
 		friend bool operator==(const DefUseNode& lhs, const DefUseNode& rhs) {
@@ -48,6 +49,7 @@ namespace MidIR {
 	};
 
 	class DefUseChain {
+
 	public:
 
 		using Node = DefUseNode;
@@ -55,6 +57,7 @@ namespace MidIR {
 	
 		Node def;
 		vector<Node> uses;
+		DefUseChain(){}
 		DefUseChain(Node def) : def(def) {}
 
 		set<Node> getDefUsesSet() {
@@ -75,6 +78,14 @@ namespace MidIR {
 				}
 			}
 			return false;
+		}
+
+		void chainMerge(Chain chain) {
+			uses.push_back(chain.def);
+			for (Node node : chain.uses) {
+				uses.push_back(node);
+			}
+			sort();
 		}
 
 		void sort() {
@@ -101,6 +112,14 @@ namespace MidIR {
 			if (rhs.def < lhs.def)
 				return false;
 			return lhs.uses < rhs.uses;
+		}
+		friend bool operator==(const DefUseChain& lhs, const DefUseChain& rhs) {
+			return lhs.def == rhs.def
+				&& lhs.uses == rhs.uses;
+		}
+
+		friend bool operator!=(const DefUseChain& lhs, const DefUseChain& rhs) {
+			return !(lhs == rhs);
 		}
 		
 	};
@@ -151,6 +170,14 @@ namespace MidIR {
 			return lhs.chains < rhs.chains;
 		}
 
+		friend bool operator==(const DefUseWeb& lhs, const DefUseWeb& rhs) {
+			return lhs.chains == rhs.chains;
+		}
+
+		friend bool operator!=(const DefUseWeb& lhs, const DefUseWeb& rhs) {
+			return !(lhs == rhs);
+		}
+
 		string toString() {
 			std::ostringstream buf;
 			buf << "{";
@@ -161,6 +188,71 @@ namespace MidIR {
 			buf << "}";
 			return buf.str();
 		}
+		
+	};
+
+#define ForFuncs(i, _funcs, func) auto& funcs = _funcs; \
+	for (int i = 0; i < funcs.size(); i++) {	\
+		auto& func = funcs[i];
+
+#define ForBlocks(i, _blocks, block) auto& blocks = _blocks;	\
+	for (int i = 0; i < blocks->size(); i++) {		\
+		auto& block = blocks->at(i);
+
+#define ForInstrs(i, _instrs, instr) auto& instrs = _instrs;	\
+	for (int i = 0; i < instrs.size(); i++) {	\
+		auto& instr = instrs[i];
+
+#define EndFor }
+
+	class InstrIterInFunc {
+	public:
+		Func& func;
+		int& block_num;
+		int& line_num;
+
+		InstrIterInFunc(Func& func, int& block_num, int& line_num) : func(func), block_num(block_num), line_num(line_num){};
+
+		Block& getBlock() {
+			return func.blocks->at(block_num);
+		}
+		
+		MidInstr& getInstr() {
+			return func.blocks->at(block_num).instrs[line_num];
+		}
+
+		void setBlock(Block block) {
+			func.blocks->at(block_num) = block;
+		}
+		
+		void setInstr(MidInstr instr) {
+			func.blocks->at(block_num).instrs[line_num] = instr;
+		}
+
+		bool next() {
+			line_num++;
+			while (line_num >= getBlock().instrs.size()) {
+				block_num++;
+				line_num = 0;
+				if (block_num >= func.blocks->size()) {
+					panic("instr interator cross the border");
+				}
+			}
+			return true;
+		}
+
+		bool prev() {
+			line_num--;
+			while (line_num < 0) {
+				block_num--;
+				line_num = getBlock().instrs.size() - 1;
+				if (block_num < 0) {
+					panic("instr interator cross the border");
+				}
+			}
+			return true;
+		}
+		
 		
 	};
 	

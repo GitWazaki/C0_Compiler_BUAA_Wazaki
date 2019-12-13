@@ -1,81 +1,29 @@
 // C0_Compiler_BUAA_Wazaki gen Mid Code
 
 
-function fib start
-  Block fib
-  para int n
-  push $ra;
-  Block if_1
-  T0 = n;
-  T1 = 1;
-  if (T0 != T1) jump if_1_else
-  Block if_1_than
-  T2 = n;
-  $v0 = T2;
-  jump _RETURN_fib;
-  Block _AFTER_RETURN__RETURN_fib_0
-  jump if_1_end;
-  Block if_1_else
-  Block if_1_end
-  Block if_2
-  T3 = n;
-  T4 = 0;
-  if (T3 != T4) jump if_2_else
-  Block if_2_than
-  T5 = n;
-  $v0 = T5;
-  jump _RETURN_fib;
-  Block _AFTER_RETURN__RETURN_fib_1
-  jump if_2_end;
-  Block if_2_else
-  Block if_2_end
-  push $fp;
-  push pool;
-  T6 = n;
-  T7 = 1;
-  T8 = T6 - T7;
-  push T8;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T9 = $v0;
-  push $fp;
-  push pool;
-  T10 = n;
-  T11 = 2;
-  T12 = T10 - T11;
-  push T12;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T13 = $v0;
-  T14 = T9 + T13;
-  $v0 = T14;
-  jump _RETURN_fib;
-  Block _AFTER_RETURN__RETURN_fib_2
-  Block _RETURN_fib
-  pop $raB;
-  pop 4B;
-  return ;
-end funciton
-
-
 function main start
   Block main
   $fp = $sp;
-  push $fp;
-  push pool;
-  T0 = 7;
-  push T0;
-  $fp = $sp + 4;
-  call fib;
-  pop pool;
-  pop $fpB;
-  T1 = $v0;
-  print(T1);
-  print('\n')
+  push 8B;
+  T0 = 1;
+  Ti = T0;
+  Block for_1_start
+  T1 = Ti;
+  T2 = 10;
+  if (T1 >= T2) jump for_1_end
+  Block for_1_body
+  T3 = Ti;
+  T4 = Ti;
+  T5 = T3 + T4;
+  Ttemp = T5;
+  T6 = Ti;
+  T7 = 1;
+  T8 = T6 + T7;
+  Ti = T8;
+  T1 = Ti;
+  T2 = 10;
+  if (T1 < T2) jump for_1_body
+  Block for_1_end
   Block _RETURN_main
 end funciton
 

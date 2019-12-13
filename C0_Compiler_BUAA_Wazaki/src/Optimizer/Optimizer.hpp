@@ -6,6 +6,7 @@
 #include "Struct.hpp"
 #include "ActiveRange.hpp"
 #include "Conflict.hpp"
+#include "FuncInline.hpp"
 
 
 using namespace std;
@@ -30,28 +31,32 @@ namespace MidIR {
 		
 		//methods
 		void removeUselessRa();
+		bool noCallInFunc(Func func);
+		void removeRa(Func& func);
+		
 		void constReplace();
 		void copyPropagation();
-		FlowGraph buildFlowGraph(Func& func);
-		void regAssign();
 		
-		//checker
-		bool noCallInFunc(Func func);
+		FlowGraph buildFlowGraph(Func& func);
+		void buildIdentRange();
 		bool checkDef(Block block, int line, string def);
 		
-		//modify
-		void removeRa(Func& func);
+		void funcsInline();
 
 		//test
 		void unitTestDefineUseChain();
-
+		
 	};
 
 	inline MidCode Optimizer::optimize() {
 		removeUselessRa();
+		
+		funcsInline();
+
 		// constReplace();
 		// copyPropagation();
-		regAssign();
+		
+		buildIdentRange();
 		
 		// unitTestDefineUseChain();
 		return midCodes;
@@ -101,7 +106,7 @@ namespace MidIR {
 	}
 #pragma endregion
 
-#pragma region methods
+#pragma region removeRa
 	inline void Optimizer::removeUselessRa() {
 		ForFuncs(i, midCodes.funcs, func)
 			if(noCallInFunc(func)) {
@@ -111,6 +116,30 @@ namespace MidIR {
 		removeRa(funcs.back());
 	}
 
+	inline bool Optimizer::noCallInFunc(Func func) {
+		ForBlocks(i, func.blocks, block)
+			ForInstrs(j, block.instrs, instr)
+			if (instr.midOp == MidInstr::CALL)
+				return false;
+			EndFor
+		EndFor
+		return true;
+	}
+
+	inline void Optimizer::removeRa(Func& func) {
+		ForBlocks(i, func.blocks, block)
+			ForInstrs(j, block.instrs, instr)
+			if (instr.midOp == MidInstr::POP_REG || instr.midOp == MidInstr::PUSH_REG) {
+				if (instr.target == "$ra") {
+					deleteInstr(instrs, j, instr);
+				}
+			}
+		EndFor
+			EndFor
+	}
+#pragma endregion 
+	
+#pragma region propagation	
 	inline void Optimizer::constReplace() {
 		ForFuncs(i, midCodes.funcs,func)
 			ForBlocks(j,func.blocks, block)
@@ -132,11 +161,14 @@ namespace MidIR {
 			EndFor
 		EndFor
 	}
-
+#pragma endregion
+	
+#pragma region dataFlowAnylsis	
 	inline FlowGraph Optimizer::buildFlowGraph(Func& func) {
 		FlowGraph flowGraph;
 		// ForFuncs(i, midCodes.funcs, func)
 			ForBlocks(j, func.blocks, block)
+				flowGraph.addBlockNum(block.label, j);
 				if(j + 1 < blocks->size()) { // 最后一个block为总的return label
 					MidInstr jumpInstr = getJumpInstr(block);
 					if (jumpInstr.midOp != MidInstr::NOP && jumpInstr.midOp != MidInstr::CALL) {// 非函数调用的跳转
@@ -151,7 +183,7 @@ namespace MidIR {
 		return flowGraph;
 	}
 
-	inline void Optimizer::regAssign() {
+	inline void Optimizer::buildIdentRange() {
 		ForFuncs(i, midCodes.funcs, func)
 			FlowGraph flow_graph = buildFlowGraph(func);
 			ConflictGraph conflictGraph;
@@ -166,32 +198,28 @@ namespace MidIR {
 					}
 					vector<string> saves = instr.getSaves();
 					for (string save : saves) {
-						if (needAssign(save) && checkDef(block,line_num,save)) {
+						// if (needAssign(save) && checkDef(block,line_num,save)) {
+						// 	conflictGraph.addDef(block_num, block.label, line_num, save);
+						// }
+						if (needAssign(save)) {
 							conflictGraph.addDef(block_num, block.label, line_num, save);
 						}
 					}
 				EndFor
 			EndFor
 			conflictGraph.genConfict(flow_graph);
-			midCodes.func_to_identRange[func.func_name] = conflictGraph.getRanges();
+			// conflictGraph.printConfictGraph();
+			midCodes.func_to_identRange[func.func_name] = conflictGraph.getRangeMap();
 		EndFor
-	}
-
-#pragma endregion 
-
-#pragma region checker
-	inline bool Optimizer::noCallInFunc(Func func) {
-		ForBlocks(i,func.blocks, block)
-			ForInstrs(j, block.instrs, instr)
-				if (instr.midOp == MidInstr::CALL)
-					return false;
-			EndFor
-		EndFor
-		return true;
 	}
 
 	inline bool Optimizer::checkDef(Block block, int line, string def) {
 		for (int i = line + 1; i < block.instrs.size(); i++) {
+			for(string load : block.instrs[i].getLoads()) {
+				if(load == def) {
+					return true;
+				}
+			}
 			for(string save : block.instrs[i].getSaves()) {
 				if (save == def) {
 					return false;
@@ -201,22 +229,19 @@ namespace MidIR {
 		}
 		return true;
 	}
-#pragma endregion 
 
-#pragma region modify
-	inline void Optimizer::removeRa(Func& func) {
-		ForBlocks(i,func.blocks,block)
-			ForInstrs(j,block.instrs,instr)
-				if (instr.midOp == MidInstr::POP_REG || instr.midOp == MidInstr::PUSH_REG) {
-					if (instr.target == "$ra") {
-						deleteInstr(instrs, j, instr);
-					}
-				}
-			EndFor
-		EndFor
-	}
 #pragma endregion
 
+
+#pragma func_inline
+
+	inline void Optimizer::funcsInline() {
+		inlineHelper inlineHelper(midCodes);
+		midCodes = inlineHelper.makeFuncsInline();
+	}
+
+#pragma endregion 
+	
 	void Optimizer::unitTestDefineUseChain() {
 		FlowGraph flow_graph;
 		flow_graph.connectBlocks("B1", "B2");

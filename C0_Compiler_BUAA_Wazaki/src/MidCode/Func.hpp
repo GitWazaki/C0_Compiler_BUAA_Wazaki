@@ -6,6 +6,8 @@ namespace MidIR {
 	public:
 		string func_name;
 		BlocksPtr blocks;
+
+		Func() {};
 		
 		Func(string func_name):func_name(func_name) {
 			blocks = std::make_shared<Blocks>();

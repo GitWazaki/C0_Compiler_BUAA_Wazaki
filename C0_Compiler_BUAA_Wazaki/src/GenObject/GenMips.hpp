@@ -89,23 +89,9 @@ namespace GenObject {
 	inline void GenMips::genGlobals() {
 		vector<MidIR::GlobalDefine>& globals = midCodes.global_defines;
 		for (int i = 0; i < globals.size(); i++) {
-			genGlobal(globals[i]);
-		}
-	}
-
-	inline void GenMips::genGlobal(MidIR::GlobalDefine define) {
-		switch (define.type) {
-		case MidIR::GlobalDefine::CONST_STR:
-			write(FORMAT("{}:.asciiz \"{}\" ",define.const_str.label,define.const_str.value));
-			break;
-		// case MidIR::GlobalDefine::VAR_INT:
-		// 	write(FORMAT("{}: .space 4", define.var_int.label));
-		// 	break;
-		// case MidIR::GlobalDefine::VAR_INT_ARRAY:
-		// 	write(FORMAT("{}: .space {}", define.var_int_array.label, 4 * define.var_int_array.len));
-		// 	break;
-		default:
-			break;
+			if (globals[i].type == MidIR::GlobalDefine::CONST_STR) {
+				write(FORMAT("{}:.asciiz \"{}\" ", globals[i].const_str.label, globals[i].const_str.value));
+			}
 		}
 	}
 
@@ -113,12 +99,14 @@ namespace GenObject {
 		auto& funcs = midCodes.funcs;
 		for (int i = 0; i < funcs.size(); i++) {
 			reg_pool.resetPool();
+			regs_stack.clear();
 			genFunc(funcs[i]);
 		}
 	}
 	
 	inline void GenMips::genFunc(MidIR::Func func) {
 		write("");
+		write("#function here");
 		cur_func_name = func.func_name;
 		auto& blocks = *(func.blocks);
 		for (int i = 0; i < blocks.size(); i++) {
@@ -148,30 +136,30 @@ namespace GenObject {
 		i++;
 	}
 
-#define REGPOOL_START 10000 * 4
+#define REGPOOL_START 8000 * 4
 
-#define NOT_ALLAC(ir_reg) startWith(instrs[i].ir_reg, std::string("_T"))
+#define HAVE_NOT_ALLAC(mid_reg) startWith(instrs[i].mid_reg, std::string("_T"))
 
-#define REGPOOL_LOAD(ir_reg, assign_reg)	\
+#define REGPOOL_LOAD(mid_reg, assign_reg)	\
 		do {	\
 			auto& instr = instrs[i];	\
-			int loc = 4 * reg_pool.getMemPool(instr.ir_reg.substr(2));	\
-			instr.ir_reg = #assign_reg;	\
+			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
+			instr.mid_reg = #assign_reg;	\
 			insertBefore(instrs, i, MidIR::MidInstr(MidIR::MidInstr::LOAD_GLOBAL, #assign_reg, REGPOOL_START+loc));	\
 		} while(0)
 
-#define REGPOOL_SAVE(ir_reg, assign_reg)	\
+#define REGPOOL_SAVE(mid_reg, assign_reg)	\
 		do {	\
 			auto& instr = instrs[i];	\
-			int loc = 4 * reg_pool.getMemPool(instr.ir_reg.substr(2));	\
-			instr.ir_reg = #assign_reg;	\
+			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
+			instr.mid_reg = #assign_reg;	\
 			insertAfter(instrs, i,MidIR::MidInstr(MidIR::MidInstr::SAVE_GLOBAL, #assign_reg, REGPOOL_START+loc));	\
 		} while(0)
 
-#define assignReg(ir_reg)	\
+#define assignReg(mid_reg)	\
 		do {	\
-			if (startWith(ir_reg, std::string("_T"))) {	\
-				ir_reg = reg_pool.getRegPool(ir_reg);	\
+			if (startWith(mid_reg, std::string("_T"))) {	\
+				mid_reg = reg_pool.applyRegInPool(mid_reg);	\
 			} \
 		} while(0)
 	
@@ -182,52 +170,59 @@ namespace GenObject {
 		
 		for (int i = 0; i < instrs.size(); i++) {
 			
-			// auto& instr = instrs[i];
+			// 若不是gen MIPS 阶段生成的指令（无行号），则刷新RegPool
 			if(instrs[i].line_num_in_block != -1) {
-				reg_pool.checkPool(ident_to_range,block_num,instrs[i].line_num_in_block);
+				reg_pool.refrashPool(ident_to_range,block_num,instrs[i].line_num_in_block);
 			}
+			
+			//尝试为中间代码中的临时变量分配寄存器
 			assignReg(instrs[i].target);
 			assignReg(instrs[i].source_a);
 			assignReg(instrs[i].source_b);
 
-			if (NOT_ALLAC(target)) {
+			//对还未分配寄存器的中间变量，使用内从
+			if (HAVE_NOT_ALLAC(target)) {
 				if (instrs[i].isLoad_target())
 					REGPOOL_LOAD(target, $a1);
 				if (instrs[i].isSave_target())
 					REGPOOL_SAVE(target, $a1);
 			}
-			if (NOT_ALLAC(source_a)) {
+			if (HAVE_NOT_ALLAC(source_a)) {
 				if (instrs[i].isLoad_a())
 					REGPOOL_LOAD(source_a, $a2);
 				if (instrs[i].isSave_a())
 					REGPOOL_SAVE(source_a, $a2);
 			}
-			if (NOT_ALLAC(source_b)) {
+			if (HAVE_NOT_ALLAC(source_b)) {
 				if (instrs[i].isLoad_b())
 					REGPOOL_LOAD(source_b, $a3);
 				if (instrs[i].isSave_b())
 					REGPOOL_SAVE(source_b, $a3);
 			}
 
+			//对函数调用前后的现场保存PUSH_REGPOOL与POP_REGPOOL特殊处理
 			if (instrs[i].midOp == MidIR::MidInstr::PUSH_REGPOOL) {		// 保存当前使用过的寄存器
 				// int push_num = stoi(instrs[i].target);
 				
 				used_regs.clear();
-				for (int i = 0; i < reg_pool.globalRegs.size(); i++) {
-					if (reg_pool.availReg[reg_pool.globalRegs[i]] == false) {
-						used_regs.push_back(reg_pool.globalRegs[i]);
+				for (int i = 0; i < reg_pool.globalRegs.size(); i++) {	//记录下检查所有寄存器的使用情况
+					if (reg_pool.regAvailStateMap[reg_pool.globalRegs[i]] == false) {
+						used_regs.push_back(reg_pool.globalRegs[i]);	// 记录下将使用过的寄存器
 					}
 				}
 				regs_stack.push_back(used_regs);
-				for (int j = 0; j < used_regs.size(); j++) {
+				for (int j = 0; j < used_regs.size(); j++) {	//对所有使用过的寄存器压栈
 					insertAfter(instrs, i, { MidIR::MidInstr::PUSH_REG, used_regs[j] });
 					// push_num++;
 				}
-				instrs[i].source_b = to_string(reg_pool.mempool_size);
+				// 为指令设置参数，source_b函数中已使用的到的内存
+				instrs[i].source_b = to_string(reg_pool.used_mem_size);
+				
 				// push_num += reg_pool.mempool_size;
 				// instrs.insert(instrs.begin() + i + 1 + used_regs.size(), MidIR::MidInstr(MidIR::MidInstr::ADD, "$fp", "$sp", int(push_num * 4)));
 				
 			} else if (instrs[i].midOp == MidIR::MidInstr::POP_REGPOOL) {
+				// 保存的所有使用过的寄存器出栈
 				used_regs = regs_stack.back();
 				for (int j = 0; j < used_regs.size(); j++) {
 					insertBefore(instrs, i, { MidIR::MidInstr::POP_REG, used_regs[j] });
@@ -280,12 +275,21 @@ namespace GenObject {
 		case MidIR::MidInstr::SCAN_INT:
 			write("li $v0, 5");
 			write("syscall");
-			write(FORMAT("sw $v0, {}($fp)", instr.target));
+			if(startWith(instr.target, string("$"))) {
+				write(FORMAT("move {}, $v0", instr.target));
+			} else {
+				write(FORMAT("sw $v0, {}($fp)", instr.target));
+			}
 			break;
 		case MidIR::MidInstr::SCAN_CHAR:
 			write("li $v0, 12");
 			write("syscall");
-			write(FORMAT("sw $v0, {}($fp)", instr.target));
+			if (startWith(instr.target, string("$"))) {
+				write(FORMAT("move {}, $v0", instr.target));
+			}
+			else {
+				write(FORMAT("sw $v0, {}($fp)", instr.target));
+			}
 			break;
 			
 		case MidIR::MidInstr::ADD:
@@ -344,7 +348,8 @@ namespace GenObject {
 				write(FORMAT("li $k0, {}", instr.source_a));
 				instr.source_a = "$k0";
 			}
-			write(FORMAT("div {}, {}, {}", instr.target, instr.source_a, instr.source_b));
+			write(FORMAT("div {}, {}", instr.source_a, instr.source_b));
+			write(FORMAT("mflo {}", instr.target));
 			break;
 		case MidIR::MidInstr::LI:
 			write(FORMAT("li {}, {}", instr.target, instr.source_a));
@@ -520,8 +525,9 @@ namespace GenObject {
 		}
 	}
 
-	inline void GenMips::pushRegPool(int size) {	// 保存所有使用过的mem 到栈中
+	inline void GenMips::pushRegPool(int size) {	// 保存所有使用过的mem到栈中
 		// pushPoolSize.push_back(mempool_size);
+		// size为使用mem空间的个数
 		pushPoolSize.push_back(size);
 		for (int i = 0; i < size; i++) {
 			write(FORMAT("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i));
@@ -539,63 +545,4 @@ namespace GenObject {
 		pushPoolSize.pop_back();
 	}
 
-#pragma region RegAssgin
-	// inline void GenMips::resetPool() {	// 不同function刷新寄存器与内存池
-	// 	mempool_size = 0;
-	// 	memPool.clear();
-	// 	regPool.clear();
-	// 	for (int i = 0; i < globalRegs.size(); i++) {
-	// 		availReg[globalRegs[i]] = true;
-	// 	}
-	// 	regs_stack.clear();
-	// }
-	//
-	// inline int GenMips::allocMemPool(string id) {
-	// 	memPool[id] = mempool_size;
-	// 	return mempool_size++;
-	// }
-	//
-	// inline int GenMips::getMemPool(string id) {
-	// 	if (memPool.find(id) == memPool.end()) { 
-	// 		return allocMemPool(id);	// 还未分配内存空间则进行分配
-	// 	}
-	// 	return memPool[id];	//已分配内存空间
-	// }
-	//
-	// inline string GenMips::getReg() {	// 获取第一空闲的寄存器
-	// 	for (int i = 0; i < globalRegs.size(); i++) {
-	// 		if (availReg[globalRegs[i]]) {
-	// 			availReg[globalRegs[i]] = false;
-	// 			return globalRegs[i];
-	// 		}
-	// 	}
-	// }
-	//
-	// inline bool GenMips::haveAvailReg() {
-	// 	for (int i = 0; i < globalRegs.size(); i++) {
-	// 		if (availReg[globalRegs[i]]) {
-	// 			return true;
-	// 		}
-	// 	}
-	// 	return false;
-	// }
-	//
-	// inline void GenMips::allocRegPool(string id) {
-	// 	string reg = getReg();
-	// 	regPool[id] = reg;
-	// }
-	//
-	// inline string GenMips::getRegPool(string id) {
-	// 	if (regPool.find(id) == regPool.end()) {	//如果未分配
-	// 		if (haveAvailReg()) {	// 有空的寄存器
-	// 			allocRegPool(id);	//分配寄存器
-	// 		} else {
-	// 			return id;	//无空寄存器，返回原id: _T{}
-	// 		}
-	// 	}
-	// 	return regPool[id];	//如果已分配
-	// }
-
-#pragma endregion
-	
 }

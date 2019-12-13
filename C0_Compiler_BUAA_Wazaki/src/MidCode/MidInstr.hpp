@@ -1,6 +1,5 @@
 #pragma once
 #define MCN 50
-#include <xlocmon>
 
 using namespace std;
 
@@ -63,8 +62,9 @@ namespace MidIR {
 			CALL,
 			RETURN,
 			JUMP,
+			DEF_VAR,
+			DEF_PARA,
 			NOP,
-			
 			MID_SHOW,
 		} midOp;
 
@@ -113,6 +113,7 @@ namespace MidIR {
 		vector<string> getLoads();
 		vector<string> getSaves();
 		string getJumpTarget();
+		bool changeJumpTarget(string label);
 
 		void constReplace(string reg,int value);
 		void copyReplace(string reg, string dup);
@@ -248,6 +249,31 @@ namespace MidIR {
 				panic("not jump instr");
 			}
 		}
+	}
+
+	inline bool MidInstr::changeJumpTarget(string label) {
+		switch (midOp) {
+		case BLT:
+		case BGT:
+		case BLE:
+		case BGE:
+		case BEQ:
+		case BNE:
+			source_b = label;
+			break;
+		case BGEZ:
+		case BLEZ:
+			source_a = label;
+			break;
+		case CALL:
+		case RETURN:
+		case JUMP:
+			target = label;
+			break;
+		default:
+			panic("not jump instr");
+		}
+		return true;
 	}
 
 	inline void MidInstr::constReplace(string reg, int value) {

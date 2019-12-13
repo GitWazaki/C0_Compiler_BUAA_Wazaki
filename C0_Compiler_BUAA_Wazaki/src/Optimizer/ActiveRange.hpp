@@ -22,8 +22,8 @@ namespace MidIR {
 	}
 
 	inline bool ActiveRange::checkIn(int block_num, int line_num) {
-		return (first.block_num <= block_num || (first.block_num == block_num && first.line_num <= line_num))
-			&& (block_num <= last.block_num || (block_num == last.block_num && line_num <= last.line_num));
+		// return (first.block_num <= block_num || (first.block_num == block_num && first.line_num <= line_num))
+		// 	&& (block_num <= last.block_num || (block_num == last.block_num && line_num <= last.line_num));
 			return tie(first.block_num, first.line_num) <= tie(block_num, line_num)
 		&& tie(block_num, line_num) <= tie(last.block_num, last.line_num);
 	}

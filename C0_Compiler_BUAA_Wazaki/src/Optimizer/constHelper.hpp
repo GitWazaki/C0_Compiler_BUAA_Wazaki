@@ -17,7 +17,7 @@ namespace MidIR {
 	void constHelper::instrConstReplace(MidInstr& instr) {
 		const auto& loads = instr.getLoads();	//vector<string>
 		for(int i = 0; i < loads.size(); i++) {
-			auto load = loads[i];
+			string load = loads[i];
 			if(hasValue(load)) {
 				instr.constReplace(load,name2constVal[load]);
 			}
@@ -35,9 +35,11 @@ namespace MidIR {
 
 		const auto& saves = instr.getSaves();	//vector<string>
 		for (int i = 0; i < saves.size(); i++) {
-			auto save = saves[i];
+			string save = saves[i];
 			if (instr.has_ans) {
 				name2constVal[save] = instr.ans;
+			} else {
+				name2constVal.erase(save);
 			}
 		}
 		
