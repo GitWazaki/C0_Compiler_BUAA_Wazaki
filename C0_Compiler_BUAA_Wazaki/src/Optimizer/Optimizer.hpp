@@ -45,11 +45,7 @@ namespace MidIR {
 		void buildIdentRange();
 		bool checkDef(Block block, int line, string def);	// no use
 		
-		
 		void funcsInline();
-
-		//test
-		void unitTestDefineUseChain();
 		
 	};
 
@@ -68,7 +64,6 @@ namespace MidIR {
 		
 		buildIdentRange();
 		
-		// unitTestDefineUseChain();
 		return midCodes;
 	}
 
@@ -140,6 +135,7 @@ namespace MidIR {
 	inline void Optimizer::copyPropagation() {
 		copyHelper copyHelper(midCodes);
 		midCodes = copyHelper.CopyPrapa();
+		midCodes = copyHelper.aluPrapa();
 	}
 
 #pragma endregion
@@ -220,52 +216,6 @@ namespace MidIR {
 		midCodes = inlineHelper.makeFuncsInline();
 	}
 
-#pragma endregion 
-
-
-#pragma region test
-	void Optimizer::unitTestDefineUseChain() {
-		FlowGraph flow_graph;
-		flow_graph.connectBlocks("B1", "B2");
-		flow_graph.connectBlocks("B2", "B3");
-		flow_graph.connectBlocks("B2", "B4");
-		flow_graph.connectBlocks("B3", "B2");
-		flow_graph.connectBlocks("B4", "B5");
-		flow_graph.connectBlocks("B5", "B6");
-		flow_graph.connectBlocks("B5", "exit");
-		flow_graph.connectBlocks("B6", "B5");
-
-		ConflictGraph define_use_chain;
-		define_use_chain.addDef(1, "B1", 1, "a");
-		define_use_chain.addDef(1, "B1", 2, "i");
-		// define_use_chain.addDef(1, "B1", 3, "i");
-
-		define_use_chain.addUse(2, "B2", 1, "i");
-
-		define_use_chain.addDef(3, "B3", 1, "a");
-		define_use_chain.addUse(3, "B3", 1, "a");
-		define_use_chain.addUse(3, "B3", 1, "i");
-
-		define_use_chain.addDef(3, "B3", 2, "i");
-		define_use_chain.addUse(3, "B3", 2, "i");
-
-		define_use_chain.addDef(4, "B4", 1, "b");
-		define_use_chain.addUse(4, "B4", 1, "a");
-		define_use_chain.addDef(4, "B4", 2, "i");
-
-		define_use_chain.addUse(5, "B5", 1, "i");
-
-		define_use_chain.addDef(6, "B6", 1, "b");
-		define_use_chain.addUse(6, "B6", 1, "b");
-		define_use_chain.addUse(6, "B6", 1, "i");
-
-		define_use_chain.addDef(6, "B6", 2, "i");
-		define_use_chain.addUse(6, "B6", 2, "i");
-
-
-		define_use_chain.genConfict(flow_graph);
-		define_use_chain.printConfictGraph();
-	}
 #pragma endregion 
 	
 }

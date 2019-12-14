@@ -129,8 +129,10 @@ namespace MidIR {
 		bool isArrMemory();
 		bool isInput();
 		bool isJump();
+		bool isAlu();
 		bool isMemorySave();
 		bool doNotPraga();
+		
 
 	};
 
@@ -371,6 +373,7 @@ namespace MidIR {
 		default:
 			break;
 		}
+		optimize();
 	}
 
 	inline void MidInstr::optimize() {
@@ -561,6 +564,18 @@ namespace MidIR {
 		case JUMP:
 		case CALL:
 		case RETURN:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	inline bool MidInstr::isAlu() {
+		switch (midOp) {
+		case ADD:
+		case SUB:
+		case MUL:
+		case DIV:
 			return true;
 		default:
 			return false;

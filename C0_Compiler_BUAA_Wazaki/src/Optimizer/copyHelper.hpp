@@ -12,8 +12,13 @@ namespace MidIR {
 		void copyPrapaDownToTop(Func& func);
 		void copyPrapaUntilDef(Func& func);
 		bool noFollowDef(string save_name, Block& block, int line_number);
-		int findNextDef(Block& block, int start, string save_name);
+		int findNextDefLoc(Block& block, int start, string save_name);
 		void prapaRange(Block& block, int start, int end, string src, string copy);
+
+		MidCode aluPrapa();
+		void prapaInstrRange(Block& block, int start, int end, string alu_ans_reg, MidInstr alu_instr);
+		
+		
 	};
 
 	inline MidCode copyHelper::CopyPrapa() {
@@ -53,7 +58,7 @@ namespace MidIR {
 			map<string, string> copy;
 				ForInstrs(k, block.instrs, instr)
 					if (instr.midOp == MidInstr::MOVE && startWith(instr.source_a, string("_T"))){
-						int next_def = findNextDef(block, k, instr.source_a);
+						int next_def = findNextDefLoc(block, k, instr.source_a);
 						int end = min(next_def,int(block.instrs.size()));
 						prapaRange(block, k + 1, end, instr.target, instr.source_a); 
 					}
@@ -71,7 +76,7 @@ namespace MidIR {
 		return true;
 	}
 
-	inline int copyHelper::findNextDef(Block& block, int start, string save_name) {
+	inline int copyHelper::findNextDefLoc(Block& block, int start, string save_name) {
 		if (!save_name.empty() && startWith(save_name, "_T")) {
 			for (int i = start; i < block.instrs.size(); i++) {
 				auto& instr = block.instrs.at(i);
@@ -94,6 +99,38 @@ namespace MidIR {
 			}
 			if (instr.isLoad_b() && instr.source_b == src) {
 				instr.source_b = copy;
+			}
+		}
+	}
+
+	inline MidCode copyHelper::aluPrapa() {
+		ForFuncs(i, midCodes.funcs, func)
+		
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if(instr.isAlu()) {
+						if(instr.midOp == MidInstr::DIV) {
+							continue;
+						}
+						int next_a = findNextDefLoc(block, k, instr.source_a) + 1;
+						int next_b = findNextDefLoc(block, k, instr.source_b) + 1;
+						int end = min(next_a, next_b);
+						end = min(end, int (block.instrs.size()));
+						prapaInstrRange(block, k + 1, end, instr.target, instr);
+					}
+					
+				EndFor
+			EndFor
+		EndFor
+		return midCodes;
+	}
+
+	inline void copyHelper::prapaInstrRange(Block& block, int start, int end, string alu_ans_reg, MidInstr alu_instr) {
+		for (int i = start; i < end; i++) {
+			auto& instr = block.instrs.at(i);
+			if (instr.midOp == MidInstr::MOVE && instr.source_a == alu_ans_reg) {
+				alu_instr.target = instr.target;
+				instr = alu_instr;
 			}
 		}
 	}

@@ -1,15 +1,14 @@
-int a,b,c,d,e;
+
+void func(int a){
+	if(a > 0){
+		return a + a;
+	} else {
+		return a - a;
+	}
+}
 
 void main(){
+
 	scanf(a);
-	b = a;
-	c = a + b;
-	d = c - b;
-	a = d;
-	e = a + d;
-	printf(a);
-	printf(b);
-	printf(c);
-	printf(d);
-	printf(e);
+	func(a);
 }

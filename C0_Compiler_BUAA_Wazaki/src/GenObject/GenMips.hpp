@@ -42,33 +42,10 @@ namespace GenObject {
 		void pushRegPool(int size);
 		void popRegPool();
 		
-		// void getRegisters(std::vector<Reg> regs);
-		// void releaseRegisters(std::vector<Reg> regs);
-
-		//Reg and mem  assign
-
-		// std::vector<std::string> globalRegs = {
-		// 	"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
-		// 	"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
-		// 	"$v1"
-		// };
-		//
-		// int mempool_size = 0;
-		// map<string, int> memPool;		//mem to loc
 		vector<int> pushPoolSize;		// 
-		// map<string, string> regPool;	//_T{} to reg
-		// map<string, bool> availReg;		// reg to bool
 		vector<std::string> used_regs;	//func used regs
 		vector<vector<string>> regs_stack;	//func used regs' stack
-		//
-		// void resetPool();
-		// int allocMemPool(string id);
-		// int getMemPool(string id);
-		// string getReg();
-		// bool haveAvailReg();
-		// void allocRegPool(string id);
-		// string getRegPool(string id);
-		
+
 	};
 
 	inline void GenMips::write(string str) {
@@ -336,7 +313,7 @@ namespace GenObject {
 			break;
 		case MidIR::MidInstr::DIV:
 			if (isNumber(instr.source_b)) {
-				if (is_power_2(stoi(instr.source_b))) {
+				if (is_power_2(stoi(instr.source_b)) && stoi(instr.source_b) > 0) {
 					write(FORMAT("srl {}, {}, {}", instr.target, instr.source_a, log2(stoi(instr.source_b))));
 					break;
 				}

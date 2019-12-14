@@ -1483,6 +1483,11 @@ namespace Parser2 {
 			error(Error::OTHERS);
 			break;
 		}
+		//TODO
+		// midCodes.popStack(symbolTable.getStackScopeBytes() - 4 * para_num);
+		// popRegFromStack("$ra");
+		// midCodes.addReturnInstr();
+		
 		output("<返回语句>");
 	}
 
@@ -1741,25 +1746,6 @@ namespace Parser2 {
 		}
 		
 	}
-
-	// inline string Parser2::getArrAddr(string arr_name, string expr_reg) {
-	// 	midCodes.addInstr({ MidIR::MidInstr::MOVE, "$k1", expr_reg });
-	// 	midCodes.addInstr({ MidIR::MidInstr::LI, "$k0", "4" });
-	// 	midCodes.addInstr({ MidIR::MidInstr::MUL, "$k1", "$k1", "$k0" });
-	// 	if (symbolTable.checkSymbolIsGlobal(arr_name)) {
-	// 		// midCodes.addInstr({ MidIR::MidInstr::LA, "$k0", midCodes.getGlobalArrLabel(arr_name) });
-	// 		midCodes.addInstr({MidIR::MidInstr::LI, "$k0",  symbolTable.getGlobalOffsetBytesByIdent(arr_name) });
-	// 		midCodes.addInstr({MidIR::MidInstr::ADD, "$k0", "$k0", "$k1" });
-	// 		midCodes.addInstr({MidIR::MidInstr::MOVE, "$k1",  "$gp" });
-	// 	} else {
-	// 		midCodes.addInstr({ MidIR::MidInstr::LI, "$k0", symbolTable.getStackOffsetBytesByIdent(arr_name) });
-	// 		midCodes.addInstr({ MidIR::MidInstr::SUB, "$k0", "$k0", "$k1" });
-	// 		midCodes.addInstr({ MidIR::MidInstr::MOVE, "$k1",  "$fp" });
-	// 	}
-	// 	midCodes.addInstr({ MidIR::MidInstr::ADD, "$k0", "$k0", "$k1" });
-	//
-	// 	return "$k0";
-	// }
 
 	void Parser2::pushArr(string arr_name, string sub_reg) {
 		if (symbolTable.checkSymbolIsGlobal(arr_name)) {

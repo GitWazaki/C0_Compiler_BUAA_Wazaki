@@ -28,7 +28,7 @@ namespace MidIR {
 		ActiveRange rangeMerge(ActiveRange r1, ActiveRange r2);
 
 		vector<ActiveRange> getLoops(FlowGraph& flow_graph);
-		void fixChainLoop(Chain& chain, vector<ActiveRange>& loops);
+		void proInLoop(Chain& chain, vector<ActiveRange>& loops);
 
 		map<string, ActiveRange> getRangeMap();
 
@@ -106,7 +106,7 @@ namespace MidIR {
 		if (!(startWith(ident, string("_T")) && isdigit(ident[2]))) {
 			auto loops = getLoops(flow_graph);
 			for (auto& chain : chains) {
-				fixChainLoop(chain, loops);
+				proInLoop(chain, loops);
 			}
 		}
 
@@ -216,7 +216,7 @@ namespace MidIR {
 		return loops;
 	}
 
-	inline void ConflictGraph::fixChainLoop(Chain& chain, vector<ActiveRange>& loops) {
+	inline void ConflictGraph::proInLoop(Chain& chain, vector<ActiveRange>& loops) {
 		bool change;
 		do {
 			change = false;

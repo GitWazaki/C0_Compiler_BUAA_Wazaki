@@ -221,7 +221,7 @@ namespace MidIR {
 				block_num++;
 				line_num = 0;
 				if (block_num >= func.blocks->size()) {
-					panic("instr interator cross the border");
+					panic("instr interator next out");
 				}
 			}
 			return true;
@@ -233,7 +233,7 @@ namespace MidIR {
 				block_num--;
 				line_num = getBlock().instrs.size() - 1;
 				if (block_num < 0) {
-					panic("instr interator cross the border");
+					panic("instr interator prev out");
 				}
 			}
 			return true;

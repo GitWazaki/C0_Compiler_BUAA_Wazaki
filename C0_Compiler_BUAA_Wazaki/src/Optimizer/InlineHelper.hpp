@@ -11,29 +11,28 @@ namespace MidIR {
 		inlineHelper(MidCode midcodes) : midCodes(midcodes) {}
 		
 		MidCode makeFuncsInline();
-		void removeFuncsVars();
-		void inlineFuncsNoLoop();
-		void inlineFuncsNoVar();
+		void replaceFuncsVars();
+		void inlineNoLoopFuncs();
+		void inlineNoVarFuncs();
 		
 		void makeFuncInline(Func& inline_func);
 
 		vector<string> getFuncVars(Func& func);
-		// void removeFuncVars(Func& func, vector<string> paras);
 		vector<string> getFuncParas(const Func& func);
-		void removeFuncPara(Func& func, vector<string> paras);
+		void replaceFuncPara(Func& func, vector<string> paras);
 		tuple<bool,string, int, int> findFuncCall(string func_name);
 		Func& getFuncByName(string func_name);
 
-		void removeBeforeFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num, vector<string> paras, int cnt);
-		void removeAfterFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num);
-		void removeFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num);
+		void deleteInstrsBeforeCall(string inline_func_name, Func& src_func, int block_num, int line_num, vector<string> paras, int cnt);
+		void deleteInstrsAfterCall(string inline_func_name, Func& src_func, int block_num, int line_num);
+		void deleteCall(string inline_func_name, Func& src_func, int block_num, int line_num);
 		void replaceFuncBody(Func inline_func, Func& src_func, int block_num, int cnt);
 		
-		bool hasFuncCall(const Func& func);
-		bool hasVar(const Func& func);
+		bool hasCallInFunc(const Func& func);
+		bool hasVarInFunc(const Func& func);
 		bool hasLocalArr(const Func& func);
 		bool isMainFunc(const Func& func);
-		bool hasLoop(const Func& func);
+		bool hasLoopInFunc(const Func& func);
 
 		string getVarTempName(string ident);
 		string getInlineTempName(string func_name, string ident, int index);
@@ -44,12 +43,12 @@ namespace MidIR {
 #pragma endregion
 
 	inline MidCode inlineHelper::makeFuncsInline() {
-		removeFuncsVars();
-		inlineFuncsNoLoop();
+		replaceFuncsVars();
+		inlineNoLoopFuncs();
 		return midCodes;
 	}
 
-	inline void inlineHelper::removeFuncsVars() {
+	inline void inlineHelper::replaceFuncsVars() {
 		
 		ForFuncs(i, midCodes.funcs, func)
 			vector<string> idents = getFuncVars(func);
@@ -88,13 +87,13 @@ namespace MidIR {
 		EndFor
 	}
 
-	inline void inlineHelper::inlineFuncsNoLoop() {
+	inline void inlineHelper::inlineNoLoopFuncs() {
 		bool doInline;
 		do {
 			doInline = false;
 			ForFuncs(i,midCodes.funcs,func)
-				if (!hasFuncCall(func) && !hasLocalArr(func) && !isMainFunc(func)) {
-					if (!hasLoop(func)) {
+				if (!hasCallInFunc(func) && !hasLocalArr(func) && !isMainFunc(func)) {
+					if (!hasLoopInFunc(func)) {
 						makeFuncInline(func);
 						midCodes.funcs.erase(midCodes.funcs.begin() + i);
 						i--;
@@ -105,13 +104,13 @@ namespace MidIR {
 		} while (doInline);
 	}
 
-	inline void inlineHelper::inlineFuncsNoVar() {
+	inline void inlineHelper::inlineNoVarFuncs() {
 		bool doInline;
 		do {
 			doInline = false;
 			ForFuncs(i, midCodes.funcs, func)
-				if (!hasFuncCall(func) && !hasLocalArr(func) && !isMainFunc(func)) {
-					if (!hasVar(func)) {
+				if (!hasCallInFunc(func) && !hasLocalArr(func) && !isMainFunc(func)) {
+					if (!hasVarInFunc(func)) {
 						makeFuncInline(func);
 						midCodes.funcs.erase(midCodes.funcs.begin() + i);
 						doInline = true;
@@ -124,7 +123,7 @@ namespace MidIR {
 
 	inline void inlineHelper::makeFuncInline(Func& inline_func) {
 		vector<string> paras = getFuncParas(inline_func);
-		removeFuncPara(inline_func, paras);
+		replaceFuncPara(inline_func, paras);
 
 		int find;
 		string src_func_name;
@@ -136,9 +135,9 @@ namespace MidIR {
 			Func& src_func = getFuncByName(src_func_name);
 			cnt++;
 
-			removeBeforeFuncCall(inline_func.func_name, src_func, block_num, line_num, paras, cnt);
-			removeAfterFuncCall(inline_func.func_name, src_func, block_num, line_num);
-			removeFuncCall(inline_func.func_name, src_func, block_num, line_num);
+			deleteInstrsBeforeCall(inline_func.func_name, src_func, block_num, line_num, paras, cnt);
+			deleteInstrsAfterCall(inline_func.func_name, src_func, block_num, line_num);
+			deleteCall(inline_func.func_name, src_func, block_num, line_num);
 			replaceFuncBody(inline_func, src_func, block_num, cnt);
 			
 		}
@@ -169,7 +168,7 @@ namespace MidIR {
 		return idents;
 	}
 
-	inline void inlineHelper::removeFuncPara(Func& func, vector<string> paras) {
+	inline void inlineHelper::replaceFuncPara(Func& func, vector<string> paras) {
 		ForBlocks(i, func.blocks, block)
 			if (block.label == FORMAT("_RETURN_{}", func.func_name)) {
 				block.instrs.clear();
@@ -217,7 +216,7 @@ namespace MidIR {
 		}
 	}
 
-	inline void inlineHelper::removeBeforeFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num,
+	inline void inlineHelper::deleteInstrsBeforeCall(string inline_func_name, Func& src_func, int block_num, int line_num,
 		vector<string> paras, int cnt) {
 		InstrIterInFunc iter = InstrIterInFunc(src_func, block_num, line_num);
 		while (!(iter.getInstr().midOp == MidInstr::PUSH_REG && iter.getInstr().target == "$fp" && iter.getInstr().source_a == inline_func_name)) {
@@ -238,7 +237,7 @@ namespace MidIR {
 		
 	}
 
-	inline void inlineHelper::removeAfterFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num) {
+	inline void inlineHelper::deleteInstrsAfterCall(string inline_func_name, Func& src_func, int block_num, int line_num) {
 		InstrIterInFunc iter = InstrIterInFunc(src_func, block_num, line_num);
 		iter.next();
 		iter.setInstr({ MidInstr::NOP });
@@ -248,7 +247,7 @@ namespace MidIR {
 		iter.setInstr({ MidInstr::NOP });
 	}
 
-	inline void inlineHelper::removeFuncCall(string inline_func_name, Func& src_func, int block_num, int line_num) {
+	inline void inlineHelper::deleteCall(string inline_func_name, Func& src_func, int block_num, int line_num) {
 		InstrIterInFunc iter = InstrIterInFunc(src_func, block_num, line_num);
 		iter.setInstr({ MidInstr::NOP }); // add fp para*4
 		iter.prev();
@@ -283,7 +282,7 @@ namespace MidIR {
 		}
 	}
 
-	inline bool inlineHelper::hasFuncCall(const Func& func) {
+	inline bool inlineHelper::hasCallInFunc(const Func& func) {
 		ForBlocks(i, func.blocks, block)
 			ForInstrs(j, block.instrs, instr)
 			if (instr.midOp == MidInstr::CALL)
@@ -293,7 +292,7 @@ namespace MidIR {
 		return false;
 	}
 
-	inline bool inlineHelper::hasVar(const Func& func) {
+	inline bool inlineHelper::hasVarInFunc(const Func& func) {
 		ForBlocks(i, func.blocks, block)
 			ForInstrs(j, block.instrs, instr)
 			if (instr.midOp == MidInstr::DEF_VAR)
@@ -317,7 +316,7 @@ namespace MidIR {
 		return func.func_name == "main";
 	}
 
-	inline bool inlineHelper::hasLoop(const Func& func) {
+	inline bool inlineHelper::hasLoopInFunc(const Func& func) {
 		ForBlocks(i, func.blocks, block)
 			if (startWith(block.label, string("for"))
 				|| startWith(block.label, string("while"))
