@@ -15,7 +15,7 @@ namespace MidIR {
 		set<string> idents;
 		
 		map<string, set<Web>> ident_webs_map;
-		map<string, ActiveRange> ident_range_map;
+		map<string, VarRange> ident_range_map;
 
 	public:
 		void addDef(int block_num, string block_name, int number, string ident);
@@ -24,13 +24,13 @@ namespace MidIR {
 		
 		void genConfict(FlowGraph& flow_graph);
 		void genWeb(string ident, FlowGraph& flow_graph);
-		ActiveRange genRange(string ident);
-		ActiveRange rangeMerge(ActiveRange r1, ActiveRange r2);
+		VarRange genRange(string ident);
+		NodeRange rangeMerge(NodeRange r1, NodeRange r2);
 
-		vector<ActiveRange> getLoops(FlowGraph& flow_graph);
-		void proInLoop(Chain& chain, vector<ActiveRange>& loops);
+		vector<NodeRange> getLoops(FlowGraph& flow_graph);
+		void proInLoop(Chain& chain, vector<NodeRange>& loops);
 
-		map<string, ActiveRange> getRangeMap();
+		map<string, VarRange> getRangeMap();
 
 		void printConfictGraph();
 		
@@ -76,9 +76,9 @@ namespace MidIR {
 		for (auto ident : idents) {
 			genWeb(ident,flow_graph);
 		}
-		for (auto ident : idents) {
-			ident_range_map[ident] = genRange(ident);
-		}
+		// for (auto ident : idents) {
+		// 	ident_range_map[ident] = genRange(ident);
+		// }
 	}
 
 	inline void ConflictGraph::genWeb(string ident, FlowGraph& flow_graph) {
@@ -178,49 +178,51 @@ namespace MidIR {
 		
 	}
 
-	inline ActiveRange ConflictGraph::genRange(string ident) {
+	inline VarRange ConflictGraph::genRange(string ident) {
 		set<Web> webs = ident_webs_map[ident];
 
 		if (webs.empty()) {	//全局变量，在block中没有def，所以webs为空
-			return ActiveRange(Node(0, "Global", 0), Node(INT32_MAX, "Global", INT32_MAX));
+			return VarRange( NodeRange(Node(0, "Global", 0), Node(INT32_MAX, "Global", INT32_MAX)));
 		}
+		VarRange range;
 		
-		ActiveRange range(webs.begin()->chains.begin()->def);
 		for(Web web : webs) {
+			NodeRange node_range(webs.begin()->chains.begin()->def);
 			for(Chain chain : web.chains) {
-				range = rangeMerge(range, { chain.def });
+				node_range = rangeMerge(node_range, { chain.def });
 				for(Node use : chain.uses) {
-					range = rangeMerge(range, { use });
+					node_range = rangeMerge(node_range, { use });
 				}
 			}
+			range.addRange(node_range);
 		}
 		return range;
 	}
 
-	inline ActiveRange ConflictGraph::rangeMerge(ActiveRange r1, ActiveRange r2) {
-		return ActiveRange(min(r1.first, r2.first), max(r1.last, r2.last));
+	inline NodeRange ConflictGraph::rangeMerge(NodeRange r1, NodeRange r2) {
+		return NodeRange(min(r1.first, r2.first), max(r1.last, r2.last));
 	}
 
-	inline vector<ActiveRange> ConflictGraph::getLoops(FlowGraph& flow_graph) {
-		vector<ActiveRange> loops;
+	inline vector<NodeRange> ConflictGraph::getLoops(FlowGraph& flow_graph) {
+		vector<NodeRange> loops;
 		for (auto edge : flow_graph.getFollowBlocksMap()) {	//edge block_name to vector<follow block name>
 			string from_block_name = edge.first;
 			for (string to_block_name : edge.second) {
 				int from_block_num = flow_graph.getBlockNum(from_block_name);
 				int to_block_num = flow_graph.getBlockNum(to_block_name);
 				if (to_block_num <= from_block_num) {
-					loops.push_back(ActiveRange(Node(to_block_num, to_block_name, 0), Node(from_block_num, from_block_name, INT32_MAX)));
+					loops.push_back(NodeRange(Node(to_block_num, to_block_name, 0), Node(from_block_num, from_block_name, INT32_MAX)));
 				}
 			}
 		}
 		return loops;
 	}
 
-	inline void ConflictGraph::proInLoop(Chain& chain, vector<ActiveRange>& loops) {
+	inline void ConflictGraph::proInLoop(Chain& chain, vector<NodeRange>& loops) {
 		bool change;
 		do {
 			change = false;
-			for (ActiveRange loop : loops) {
+			for (NodeRange loop : loops) {
 				for (Node use : chain.uses) {
 					if (loop.checkIn(use.block_num, use.line_num) && getSubIndex(chain.uses, loop.last) == -1) {
 						chain.uses.push_back(loop.last);
@@ -235,7 +237,10 @@ namespace MidIR {
 		chain.sort();
 	}
 
-	inline map<string, ActiveRange> ConflictGraph::getRangeMap() {
+	inline map<string, VarRange> ConflictGraph::getRangeMap() {
+		for (auto ident : idents) {
+			ident_range_map[ident] = genRange(ident);
+		}
 		return ident_range_map;
 	}
 

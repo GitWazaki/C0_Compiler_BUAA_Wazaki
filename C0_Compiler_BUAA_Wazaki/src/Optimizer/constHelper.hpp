@@ -15,6 +15,8 @@ namespace MidIR {
 	};
 
 	void constHelper::instrConstReplace(MidInstr& instr) {
+		if (instr.midOp == MidInstr::NOP || instr.midOp == MidInstr::MID_SHOW)
+			return;
 		const auto& loads = instr.getLoads();	//vector<string>
 		for(int i = 0; i < loads.size(); i++) {
 			string load = loads[i];

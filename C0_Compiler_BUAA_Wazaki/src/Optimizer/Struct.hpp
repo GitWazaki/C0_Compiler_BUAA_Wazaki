@@ -194,10 +194,10 @@ namespace MidIR {
 	class InstrIterInFunc {
 	public:
 		Func& func;
-		int& block_num;
-		int& line_num;
+		int block_num;
+		int line_num;
 
-		InstrIterInFunc(Func& func, int& block_num, int& line_num) : func(func), block_num(block_num), line_num(line_num){};
+		InstrIterInFunc(Func& func, int block_num, int line_num) : func(func), block_num(block_num), line_num(line_num){};
 
 		Block& getBlock() {
 			return func.blocks->at(block_num);
@@ -221,7 +221,7 @@ namespace MidIR {
 				block_num++;
 				line_num = 0;
 				if (block_num >= func.blocks->size()) {
-					panic("instr interator next out");
+					return false;
 				}
 			}
 			return true;
@@ -231,10 +231,11 @@ namespace MidIR {
 			line_num--;
 			while (line_num < 0) {
 				block_num--;
-				line_num = getBlock().instrs.size() - 1;
 				if (block_num < 0) {
-					panic("instr interator prev out");
+					return false;
 				}
+				line_num = getBlock().instrs.size() - 1;
+				
 			}
 			return true;
 		}

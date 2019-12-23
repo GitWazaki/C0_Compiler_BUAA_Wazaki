@@ -10,15 +10,19 @@ namespace MidIR {
 		BlockHelper(MidCode midCodes) :midCodes(midCodes) {};
 		
 		MidCode mergeBlock();
+		MidCode getMidCodes();
 		
 		void mergeEmptyBlocks();
 		void mergeJumpNextBlocks();
+		void mergeNoEntryBlocks();
 		void mergeSimpleAdjBlocks();
 		void removeUselessJump();
 		
 		void changeJumpTargetInFunc(Func& func, string empty_block_label, string next_block_label);
 		void mergeNextBlock(BlocksPtr& blocks, int loc);
 		bool hasMultiEntry(FlowGraph& flowGraph, string label);
+		bool hasNoEntry(FlowGraph& flow_graph, string block_name);
+		bool hasOnlySelfLoop(FlowGraph& flow_graph, string block_name);
 		
 	};
 
@@ -26,7 +30,13 @@ namespace MidIR {
 		mergeEmptyBlocks();
 		mergeJumpNextBlocks();
 		mergeSimpleAdjBlocks();
+		mergeNoEntryBlocks();
 		removeUselessJump();
+		mergeSimpleAdjBlocks();
+		return midCodes;
+	}
+
+	inline MidCode BlockHelper::getMidCodes() {
 		return midCodes;
 	}
 
@@ -70,6 +80,25 @@ namespace MidIR {
 				EndFor
 			} while (diff);
 		
+		EndFor
+	}
+
+	inline void BlockHelper::mergeNoEntryBlocks() {
+		ForFuncs(i, midCodes.funcs, func)
+			bool diff;
+			do {
+				diff = false;
+				FlowGraph flow_graph = FlowHelper().buildFlowGraphInFunc(func);
+				ForBlocks(j, func.blocks, block)
+					if (j == 0)
+						continue;
+					if (hasNoEntry(flow_graph, block.label) || hasOnlySelfLoop(flow_graph, block.label)) {
+						blocks->erase(blocks->begin() + j);
+						j--;
+						diff = true;
+					}
+				EndFor
+			} while (diff);
 		EndFor
 	}
 
@@ -142,6 +171,18 @@ namespace MidIR {
 
 	inline bool BlockHelper::hasMultiEntry(FlowGraph& flowGraph, string label) {
 		return flowGraph.getPreBlocks(label).size() > 1;
+	}
+
+	inline bool BlockHelper::hasNoEntry(FlowGraph& flow_graph, string block_name) {
+		return flow_graph.getPreBlocks(block_name).size() == 0;
+	}
+
+	inline bool BlockHelper::hasOnlySelfLoop(FlowGraph& flow_graph, string block_name) {
+		auto preds = flow_graph.getPreBlocks(block_name);
+		if (preds.size() == 1 && preds[0] == block_name) {
+			return true;
+		}
+		return false;
 	}
 
 }

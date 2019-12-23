@@ -60,7 +60,7 @@ namespace Parser2 {
 		tuple<Symbol::SymbolType,string> expr(); //表达式
 		Symbol::SymbolType term(); //项
 		Symbol::SymbolType factor(); //因子
-		tuple<string, string, token> condition(); //条件
+		tuple<string, string, token> condition(bool rev = true); //条件
 		void condStatement(); //条件语句
 		void elseCondStat(); //条件语句else部分
 		void cycleStatement(); //循环语句
@@ -373,9 +373,7 @@ namespace Parser2 {
 				case TokenType::COMMA:
 					checkPush(symbolTable.push(Symbol::SymbolItem(ident.val, Symbol::VAR, stype)));
 					if (symbolTable.getScope() == -1) {
-						// midShow(FORMAT("Global_{} {}", symbolType2String(stype), ident.val));
 					} else {
-						// midShow(FORMAT("{} {}", symbolType2String(stype), ident.val));
 						midDefVar(symbolType2String(stype), ident.val);
 					}
 					break;
@@ -390,9 +388,8 @@ namespace Parser2 {
 					checkPush(symbolTable.push(Symbol::SymbolItem(
 						ident.val, Symbol::ARRAY, stype, atoi(lenToken.val.c_str()))));
 					if (symbolTable.getScope() == -1) { //全局数组定义
-						// midShow(FORMAT("Global_{} {}[{}]", symbolType2String(stype), ident.val, lenToken.val));
+						
 					} else {
-						// midShow(FORMAT("{} {}[{}]", symbolType2String(stype), ident.val, lenToken.val));
 						midDefVar(symbolType2String(stype), ident.val, lenToken.val);
 					}
 					break;
@@ -806,7 +803,7 @@ namespace Parser2 {
 			checkFind(find);
 
 			pushRegToStack("$fp",ident.val);
-			midCodes.addInstr({ MidIR::MidInstr::PUSH_REGPOOL });
+			midCodes.addInstr({ MidIR::MidInstr::PUSH_REGPOOL, ident.val});
 			
 			eatToken(TokenType::LPARENT);
 			
@@ -961,17 +958,6 @@ namespace Parser2 {
 			case TokenType::INTCON:
 			case TokenType::CHARCON:
 			case TokenType::LPARENT:
-				// if (first && noProOp) {
-				// 	if (lookToken() == TokenType::IDENFR) {
-				// 		tie(find, symbol) = symbolTable.findSymbol(tok.val);
-				// 		checkFind(find);
-				// 		if (symbol.isChar()) {
-				// 			exprType = Symbol::CHAR;
-				// 		}
-				// 	} else if (lookToken() == TokenType::CHARCON) {
-				// 		exprType = Symbol::CHAR;
-				// 	}
-				// }
 				if (!first) {
 					exprType = Symbol::INT;
 					token opToken = plusOp();
@@ -1186,7 +1172,7 @@ namespace Parser2 {
 	}
 
 	//＜条件＞ ::=  ＜表达式＞＜关系运算符＞＜表达式＞｜＜表达式＞
-	inline tuple<string, string, token> Parser2::condition() {
+	inline tuple<string, string, token> Parser2::condition(bool rev) {
 		Symbol::SymbolType lexprType;
 		Symbol::SymbolType rexprType;
 		string lexprVal, rexprVal;
@@ -1219,11 +1205,21 @@ namespace Parser2 {
 				if (rexprType != Symbol::INT) {
 					error(Error::ILLEGAL_TYPE_IN_CONDITION);
 				}
-				midCodes.genBranch(cmpToken.type,lexprVal,rexprVal);
+				if(rev) {
+					midCodes.genBranch(cmpToken.type, lexprVal, rexprVal);
+				} else {
+					midCodes.genBranchRet(cmpToken.type, lexprVal, rexprVal);
+				}
+				
 				break;
 			case TokenType::SEMICN:
 			case TokenType::RPARENT:
-				midCodes.addInstr({ MidIR::MidInstr::BLEZ,lexprVal,midCodes.getStartLoc() });
+				if(rev) {
+					midCodes.addInstr({ MidIR::MidInstr::BLEZ,lexprVal,midCodes.getStartLoc() });
+				} else {
+					midCodes.addInstr({ MidIR::MidInstr::BGTZ,lexprVal,midCodes.getStartLoc() });
+				}
+				
 				goto EndCondition;
 			default:
 				error(Error::OTHERS);
@@ -1263,9 +1259,9 @@ namespace Parser2 {
 			}
 			eatToken(TokenType::WHILETK);
 			eatToken(TokenType::LPARENT);
-			condition();
+			condition(false);
 			eatToken(TokenType::RPARENT);
-			midCodes.jumpInstr(midCodes.getDoWhileName());
+			// midCodes.jumpInstr(midCodes.getDoWhileName());
 			midCodes.newBlock(midCodes.getDoWhileEndName());
 			midCodes.endDefine();
 			break;
@@ -1763,11 +1759,13 @@ namespace Parser2 {
 		// sw expr_ans arr_offset($gp+sub_reg>>4)
 		if (symbolTable.checkSymbolIsGlobal(arr_name)) {
 			midCodes.addInstr({ MidIR::MidInstr::SAVE_GLOBAL_ARR,expr_ans, symbolTable.getGlobalOffsetBytesByIdent(arr_name),sub_reg });
+			midCodes.saveVarName(FORMAT("_G{}", arr_name));
 		}
 		else {
 			midCodes.addInstr({ MidIR::MidInstr::SAVE_STACK_ARR,expr_ans, symbolTable.getStackOffsetBytesByIdent(arr_name),sub_reg });
+			midCodes.saveVarName(arr_name);
 		}
-		midCodes.saveVarName(arr_name);
+		
 	}
 
 

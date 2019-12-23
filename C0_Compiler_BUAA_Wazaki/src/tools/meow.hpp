@@ -97,12 +97,6 @@ int getSubIndex(vector<T> container, T x) {
 template<typename T>
 set<T> setOr(const set<T>& a, const set<T>& b) {
 	set<T> ans;
-	// for (auto i = a.begin(); i != a.end(); i++) {
-	// 	ans.insert(*i);
-	// }
-	// for (auto i = b.begin(); i != b.end(); i++) {
-	// 	ans.insert(*i);
-	// }
 	for (auto obj : a) {
 		ans.insert(obj);
 	}
@@ -115,16 +109,6 @@ set<T> setOr(const set<T>& a, const set<T>& b) {
 template<typename T>
 set<T> setAnd(const set<T>& a, const set<T>& b) {
 	set<T> ans;
-	// for (auto i = a.begin(); i != a.end(); i++) {
-	// 	if (Found(b, *i)) {
-	// 		ans.insert(*i);
-	// 	}
-	// }
-	// for (auto i = b.begin(); i != b.end(); i++) {
-	// 	if (Found(a, *i)) {
-	// 		ans.insert(*i);
-	// 	}
-	// }
 	for (auto obj : a) {
 		if(Found(b,obj)) {
 			ans.insert(obj);
@@ -141,11 +125,6 @@ set<T> setAnd(const set<T>& a, const set<T>& b) {
 template<typename T>
 set<T> setSub(const set<T>& a, const set<T>& b) {
 	set<T> ans;
-	// for (auto i = a.begin(); i != a.end(); i++) {
-	// 	if (notFound(b, *i)) {
-	// 		ans.insert(*i);
-	// 	}
-	// }
 	for (auto obj : a) {
 	if (notFound(b, obj)) {
 		ans.insert(obj);
@@ -153,3 +132,9 @@ set<T> setSub(const set<T>& a, const set<T>& b) {
 }
 	return ans;
 }
+
+vector<string> globalRegs = {
+			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
+			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
+			"$v1",
+};

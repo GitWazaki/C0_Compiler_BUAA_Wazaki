@@ -13,7 +13,6 @@ namespace MidIR {
 		MidCode makeFuncsInline();
 		void replaceFuncsVars();
 		void inlineNoLoopFuncs();
-		void inlineNoVarFuncs();
 		
 		void makeFuncInline(Func& inline_func);
 
@@ -22,6 +21,7 @@ namespace MidIR {
 		void replaceFuncPara(Func& func, vector<string> paras);
 		tuple<bool,string, int, int> findFuncCall(string func_name);
 		Func& getFuncByName(string func_name);
+		MidCode replaceeAllPara();
 
 		void deleteInstrsBeforeCall(string inline_func_name, Func& src_func, int block_num, int line_num, vector<string> paras, int cnt);
 		void deleteInstrsAfterCall(string inline_func_name, Func& src_func, int block_num, int line_num);
@@ -52,27 +52,22 @@ namespace MidIR {
 		
 		ForFuncs(i, midCodes.funcs, func)
 			vector<string> idents = getFuncVars(func);
-			// removeFuncVars(func, idents);
-			int x = 0, y = 0, z = 0,h = 0;
 			ForBlocks(j, func.blocks, block)
 				ForInstrs(k, block.instrs, instr)
 					if (instr.midOp == MidInstr::DEF_VAR && getSubIndex(idents, instr.source_a) != -1) {
 						instr = MidInstr(MidInstr::NOP);
-						x++;
 					}
 					if (instr.midOp == MidInstr::LOAD_STACK) {
 						int index = getSubIndex(idents, instr.var_name);
 						if (index == -1)
 							continue;
 						instr = MidInstr(MidInstr::MOVE, instr.target, getVarTempName(idents[index]));
-						y++;
 					}
 					if (instr.midOp == MidInstr::SAVE_STACK) {
 							int index = getSubIndex(idents, instr.var_name);
 							if (index == -1)
 								continue;
 							instr = MidInstr(MidInstr::MOVE, getVarTempName(idents[index]), instr.target);
-							z++;
 					}
 					if (instr.midOp == MidInstr::SCAN_INT || instr.midOp == MidInstr::SCAN_CHAR) {
 						int index = getSubIndex(idents, instr.var_name);
@@ -80,7 +75,6 @@ namespace MidIR {
 							continue;
 						instr.target = getVarTempName(idents[index]);
 						instr.var_name = getVarTempName(idents[index]);
-						h++;
 					}
 				EndFor
 			EndFor
@@ -98,23 +92,6 @@ namespace MidIR {
 						midCodes.funcs.erase(midCodes.funcs.begin() + i);
 						i--;
 						doInline = true;
-					}
-				}
-			EndFor
-		} while (doInline);
-	}
-
-	inline void inlineHelper::inlineNoVarFuncs() {
-		bool doInline;
-		do {
-			doInline = false;
-			ForFuncs(i, midCodes.funcs, func)
-				if (!hasCallInFunc(func) && !hasLocalArr(func) && !isMainFunc(func)) {
-					if (!hasVarInFunc(func)) {
-						makeFuncInline(func);
-						midCodes.funcs.erase(midCodes.funcs.begin() + i);
-						doInline = true;
-						i--;
 					}
 				}
 			EndFor
@@ -216,9 +193,46 @@ namespace MidIR {
 		}
 	}
 
-	inline void inlineHelper::deleteInstrsBeforeCall(string inline_func_name, Func& src_func, int block_num, int line_num,
-		vector<string> paras, int cnt) {
+	inline MidCode inlineHelper::replaceeAllPara() {
+		ForFuncs(i, midCodes.funcs, func)
+			vector<string> paras = getFuncParas(func);
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.midOp == MidInstr::DEF_PARA) {
+						string type = instr.target;
+						string para_name = instr.source_a;
+						int index = getSubIndex(paras, instr.source_a);
+						if (index != -1) {
+							instr = MidInstr(MidInstr::LOAD_STACK, getVarTempName(instr.source_a), -index * 4);
+							instr.var_name = FORMAT("para_{}_{}", type, para_name);
+						}
+					} else if (instr.midOp == MidInstr::LOAD_STACK) {
+						if (getSubIndex(paras, instr.var_name) != -1) {
+							instr = MidInstr(MidInstr::MOVE, instr.target, getVarTempName(instr.var_name));
+						}
+					} else if (instr.midOp == MidInstr::SAVE_STACK) {
+						if (getSubIndex(paras, instr.var_name) != -1) {
+							instr = MidInstr(MidInstr::MOVE, getVarTempName(instr.var_name), instr.target);
+						}
+					}
+				EndFor
+			EndFor
+		EndFor
+		return  midCodes;
+	}
+
+	inline void inlineHelper::deleteInstrsBeforeCall(string inline_func_name, Func& src_func, int block_num, int line_num, vector<string> paras, int cnt) {
 		InstrIterInFunc iter = InstrIterInFunc(src_func, block_num, line_num);
+
+		int index = paras.size() - 1;
+		while (index >= 0) {
+			iter.prev();
+			if (iter.getInstr().midOp == MidInstr::PUSH_REG && iter.getInstr().source_a == inline_func_name && iter.getInstr().source_b == to_string(index)) {
+				iter.getInstr() = MidInstr(MidInstr::MOVE, getInlineTempNameWithCnt(inline_func_name, paras[index], index,  cnt), iter.getInstr().target);
+				index--;
+			}
+		}
+		
 		while (!(iter.getInstr().midOp == MidInstr::PUSH_REG && iter.getInstr().target == "$fp" && iter.getInstr().source_a == inline_func_name)) {
 			iter.prev();
 		}
@@ -226,14 +240,6 @@ namespace MidIR {
 		iter.setInstr({ MidInstr::NOP });		//remove push $fp
 		iter.next();
 		iter.setInstr({ MidInstr::NOP });	// remove push regpool
-
-		for (int index = 0;index < paras.size();/*nothing*/) {	//将参数压栈 替换为 MOVE到临时变量
-			iter.next();
-			if (iter.getInstr().midOp == MidInstr::PUSH_REG && iter.getInstr().source_a == inline_func_name) {
-				iter.setInstr({MidInstr::MOVE, getInlineTempNameWithCnt(inline_func_name, paras[index], index, cnt), iter.getInstr().target});
-				index++;
-			}
-		}
 		
 	}
 

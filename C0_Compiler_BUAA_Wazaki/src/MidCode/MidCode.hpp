@@ -31,7 +31,7 @@ namespace MidIR {
 		vector<GlobalDefine> global_defines;
 		vector<Func> funcs;
 
-		map<string, map<string, ActiveRange>> func_to_identRange;
+		map<string, map<string, VarRange>> func_to_identRange;
 		
 		//temp
 		string func_name;
@@ -47,7 +47,7 @@ namespace MidIR {
 		int after_ret_cnt = 0;
 		int after_call_cnt = 0;
 		string defineConstStr(string str);
-
+		
 		// new label
 		void newBlock(string label);
 		string getGlobalVarLabel(string ident);
@@ -366,9 +366,9 @@ namespace MidIR {
 	}
 
 	inline void MidCode::openStackSpace(int bytes) {
-		if (bytes != 0) {
+		// if (bytes != 0) {
 			addInstr(MidInstr{ MidInstr::PUSH, to_string(bytes) });
-		}
+		// }
 	}
 
 	inline void MidCode::popStack(int size) {
@@ -425,15 +425,15 @@ namespace MidIR {
 	}
 
 	inline string MidCode::getForStartName() {
-		return FORMAT("for_{}_start", branch_stack.back().name_id);
+		return FORMAT("for_start_{}", branch_stack.back().name_id);
 	}
 
 	inline string MidCode::getForBodyName() {
-		return FORMAT("for_{}_body", branch_stack.back().name_id);
+		return FORMAT("for_body_{}", branch_stack.back().name_id);
 	}
 
 	inline string MidCode::getForEndName() {
-		return FORMAT("for_{}_end", branch_stack.back().name_id);
+		return FORMAT("for_end_{}", branch_stack.back().name_id);
 	}
 
 	inline string MidCode::getStartLoc() {
@@ -456,6 +456,8 @@ namespace MidIR {
 			return getForBodyName();
 		case BranchDefine::WHILE_DEFINE:
 			return getWhileBodyName();
+		case BranchDefine::DOWHILE_DEFINE:
+			return getDoWhileName();
 		default:break;
 		}
 	}
@@ -471,11 +473,11 @@ namespace MidIR {
 	}
 
 	inline string MidCode::getWhileBodyName() {
-		return FORMAT("while_{}_body", branch_stack.back().name_id);
+		return FORMAT("while_body_{}", branch_stack.back().name_id);
 	}
 
 	inline string MidCode::getWhileEndName() {
-		return FORMAT("while_{}_end", branch_stack.back().name_id);
+		return FORMAT("while_end_{}", branch_stack.back().name_id);
 	}
 
 	inline void MidCode::defineDoWhile() {
@@ -489,7 +491,7 @@ namespace MidIR {
 	}
 
 	inline string MidCode::getDoWhileEndName() {
-		return FORMAT("dowhile_{}_end", branch_stack.back().name_id);
+		return FORMAT("dowhile_end_{}", branch_stack.back().name_id);
 	}
 
 	inline vector<MidInstr> MidCode::getCondInstrs(string block_name) {
@@ -579,4 +581,38 @@ namespace MidIR {
 		auto& instr = instrs[i];
 
 #define EndFor }
+
+#define REGPOOL_LOC 8000 * 4
+
+#define HAVE_NOT_ALLAC(mid_reg) startWith(instrs[i].mid_reg, std::string("_T"))
+
+#define REGPOOL_LOAD(mid_reg, assign_reg)	\
+		do {	\
+			auto& instr = instrs[i];	\
+			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
+			instr.mid_reg = #assign_reg;	\
+			insertBefore(instrs, i, MidIR::MidInstr(MidIR::MidInstr::LOAD_POOL, #assign_reg, loc));	\
+		} while(0)
+
+#define REGPOOL_SAVE(mid_reg, assign_reg)	\
+		do {	\
+			auto& instr = instrs[i];	\
+			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
+			instr.mid_reg = #assign_reg;	\
+			insertAfter(instrs, i,MidIR::MidInstr(MidIR::MidInstr::SAVE_POOL, #assign_reg, loc));	\
+		} while(0)
+
+#define assignReg(mid_reg)	\
+		do {	\
+			if (startWith(mid_reg, std::string("_T"))) {	\
+				mid_reg = reg_pool.applyRegInPool(mid_reg);	\
+			} \
+		} while(0)
+
+#define getReg(mid_reg)	\
+		do {	\
+			if (startWith(mid_reg, std::string("_T"))) {	\
+				mid_reg = reg_pool.getRegInPool(mid_reg);	\
+			} \
+		} while(0)
 }

@@ -25,7 +25,8 @@ namespace MidIR {
 			NEG,
 			LI,
 			MOVE,
-
+			LA,
+			
 			// ±È½Ï
 			BEQ,	//==
 			BNE,	//!=
@@ -33,14 +34,12 @@ namespace MidIR {
 			BGE,		// >=
 			BLT,	//<
 			BLE,	//<=
-			BGEZ,	//>=0
+			BGTZ,	//> 0
+			BLTZ,
+			BGEZ,
 			BLEZ,	//<=0
 
 			// Memory
-			// LOAD_LABEL,		//no use
-			// SAVE_LABEL,		//no ues
-			// LOAD_LAB_IMM,		//no use
-			// SAVE_LAB_IMM,		//no use
 			LOAD_GLOBAL,
 			SAVE_GLOBAL,
 			LOAD_STACK,
@@ -49,7 +48,8 @@ namespace MidIR {
 			SAVE_GLOBAL_ARR,
 			LOAD_STACK_ARR,
 			SAVE_STACK_ARR,
-			LA,
+			LOAD_POOL,
+			SAVE_POOL,
 
 			// Stack
 			PUSH,
@@ -239,7 +239,9 @@ namespace MidIR {
 			case BEQ:
 			case BNE:
 				return source_b;
+			case BGTZ:
 			case BGEZ:
+			case BLTZ:
 			case BLEZ:
 				return source_a;
 			case CALL:
@@ -262,7 +264,9 @@ namespace MidIR {
 		case BNE:
 			source_b = label;
 			break;
+		case BGTZ:
 		case BGEZ:
+		case BLTZ:
 		case BLEZ:
 			source_a = label;
 			break;
@@ -278,17 +282,17 @@ namespace MidIR {
 	}
 
 	inline void MidInstr::constReplace(string reg, int value) {
-		if(reg == target) {
+		if(reg == target&&isLoad_target()) {
 			target_val = value;
 			target = to_string(value);
 			target_has_val = true;
 		}
-		if(reg == source_a) {
+		if(reg == source_a&&isLoad_a()) {
 			a_val = value;
 			source_a = to_string(value);
 			a_has_val = true;
 		}
-		if(reg == source_b) {
+		if(reg == source_b&&isLoad_b()) {
 			b_val = value;
 			source_b = to_string(value);
 			b_has_val = true;
@@ -307,6 +311,9 @@ namespace MidIR {
 	}
 
 	inline bool MidInstr::ansComputable() {
+		if(doNotPraga()) {
+			return false;
+		}
 		if (isLoad_target() && !target_has_val)
 			return false;
 		if (isLoad_a() && !a_has_val)
@@ -342,8 +349,14 @@ namespace MidIR {
 			ans = a_val;
 			has_ans = true;
 			break;
+		case BGTZ:
+			ans = target_val > 0 ? 1 : 0;
+			break;
 		case BGEZ:
 			ans = target_val >= 0 ? 1 : 0;
+			break;
+		case BLTZ:
+			ans = target_val < 0 ? 1 : 0;
 			break;
 		case BLEZ:
 			ans = target_val <= 0 ? 1 : 0;
@@ -387,7 +400,9 @@ namespace MidIR {
 			midOp = LI;
 			source_a = to_string(ans);
 			break;
+		case BGTZ:
 		case BGEZ:
+		case BLTZ:
 		case BLEZ:
 			if (ans == 1) {
 				midOp = JUMP;
@@ -440,14 +455,16 @@ namespace MidIR {
 		switch (midOp) {
 		case PRINT_CHAR:
 		case PRINT_INT:
-		case BGEZ:
-		case BLEZ:
 		case BLT:
 		case BGT:
 		case BLE:
 		case BGE:
 		case BEQ:
 		case BNE:
+		case BGTZ:
+		case BGEZ:
+		case BLTZ:
+		case BLEZ:
 		case SAVE_GLOBAL:
 		case SAVE_STACK:
 		case SAVE_GLOBAL_ARR:
@@ -507,6 +524,8 @@ namespace MidIR {
 		case LOAD_STACK:
 		case LOAD_GLOBAL_ARR:
 		case LOAD_STACK_ARR:
+		case SCAN_INT:
+		case SCAN_CHAR:
 			return true;
 		default:
 			return false;
@@ -553,14 +572,16 @@ namespace MidIR {
 
 	inline bool MidInstr::isJump() {
 		switch (midOp) {
-		case BGEZ:
-		case BLEZ:
 		case BLT:
 		case BGT:
 		case BLE:
 		case BGE:
 		case BEQ:
 		case BNE:
+		case BGTZ:
+		case BGEZ:
+		case BLTZ:
+		case BLEZ:
 		case JUMP:
 		case CALL:
 		case RETURN:

@@ -38,8 +38,8 @@ int main() {
 	string input = readFileIntoString("testfile.txt");
 	ofstream fout("output.txt");
 	ofstream errout("error.txt");
-	string midpath = "mid.txt";
-	string optpath = "opt.txt";
+	string midpath = "17373420_wjk_midcode_before_opt.txt";
+	string optpath = "17373420_wjk_midcode_after_opt.txt";
 	ofstream mipsout{ "mips.txt" };
 	// string input = readFileIntoString("../../../testfile.txt");
 	// ofstream fout("../../../output.txt"); 

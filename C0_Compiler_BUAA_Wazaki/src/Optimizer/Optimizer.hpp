@@ -9,6 +9,7 @@
 #include "ActiveRange.hpp"
 #include "Conflict.hpp"
 #include "InlineHelper.hpp"
+#include "LoopHelper.hpp"
 
 
 using namespace std;
@@ -36,7 +37,11 @@ namespace MidIR {
 		void removeRa(Func& func);
 		
 		void constReplace();
-		void copyPropagation();
+		
+		void copyPrapaAndRemove();
+		void copyPropa();
+		void aluMovePropa();
+		void aluCopyPropa();
 		
 		void removeDeadCode();
 
@@ -46,21 +51,18 @@ namespace MidIR {
 		bool checkDef(Block block, int line, string def);	// no use
 		
 		void funcsInline();
-		
+		void unfoldLoop();
 	};
 
 	inline MidCode Optimizer::optimize() {
 		removeUselessRa();
 		
 		funcsInline();
-
-		mergeBlocks();
-
-		constReplace();
-		copyPropagation();
-
-		removeDeadCode();
 		
+		mergeBlocks();
+		
+		constReplace();
+		copyPrapaAndRemove();
 		
 		buildIdentRange();
 		
@@ -132,10 +134,30 @@ namespace MidIR {
 		EndFor
 	}
 
-	inline void Optimizer::copyPropagation() {
+	inline void Optimizer::copyPrapaAndRemove() {
+		copyPropa();
+		aluMovePropa();
+		aluCopyPropa();
+	}
+
+	inline void Optimizer::copyPropa() {
 		copyHelper copyHelper(midCodes);
 		midCodes = copyHelper.CopyPrapa();
-		midCodes = copyHelper.aluPrapa();
+		removeDeadCode();
+	}
+
+	inline void Optimizer::aluMovePropa() {
+		copyHelper copyHelper(midCodes);
+		midCodes = copyHelper.aluPrapaWithMove();
+		midCodes = copyHelper.CopyPrapa();
+		removeDeadCode();
+	}
+
+	inline void Optimizer::aluCopyPropa() {
+		copyHelper copyHelper(midCodes);
+		midCodes = copyHelper.aluPrapaWithCopy();
+		midCodes = copyHelper.CopyPrapa();
+		removeDeadCode();
 	}
 
 #pragma endregion
@@ -214,8 +236,14 @@ namespace MidIR {
 	inline void Optimizer::funcsInline() {
 		inlineHelper inlineHelper(midCodes);
 		midCodes = inlineHelper.makeFuncsInline();
+		midCodes = inlineHelper.replaceeAllPara();
 	}
 
-#pragma endregion 
+#pragma endregion
 	
+	inline void Optimizer::unfoldLoop() {
+		LoopHelper loopHelper(midCodes);
+		loopHelper.unfoldLoop();
+		midCodes = loopHelper.getMidCodes();
+	}
 }

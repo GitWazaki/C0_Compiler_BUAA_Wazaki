@@ -1,41 +1,634 @@
 // C0_Compiler_BUAA_Wazaki gen Mid Code
+string_0 = "Can not find Nearest_Point";
+string_1 = "Can not find Nearest_Point";
+string_2 = "Can not find Nearest_Point";
+string_3 = "Caculate of const is ";
+string_4 = "In function 1,Middle_Number is ";
+string_5 = "In function 2,Middle_Number is ";
+string_6 = "In function 3,Middle_Number is ";
+string_7 = "Middle_Number Answer Correct!";
+string_8 = "Middle_Number Error1!";
+string_9 = "Middle_Number Error2!";
+string_10 = "In function 1,Nearest point is ";
+string_11 = "In function 2,Nearest point is ";
+string_12 = "In function 3,Nearest point is ";
+string_13 = "Nearest_Point Answer Correct!";
+string_14 = "Nearest_Point Error1!";
+string_15 = "Nearest_Point Error2!";
+string_16 = "All Cyclic Procedure Right!";
+string_17 = "Cyclic Procedure Error!";
+string_18 = "Cyclic Procedure Error!";
+
+
+__function Middle_Number_1 start__
+Block Middle_Number_1
+TN = para_int_N;
+ARR int num_copy[100];
+push 424Bit;
+T2 = TN / 2;
+Tmiddle_n = T2;
+Ti = 0;
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+Ti = 0;
+Block dowhile_1
+T12 = _Gnum[Ti] ;
+num_copy[Ti] = T12;
+T17 = Ti + 1;
+Ti = Ti + 1;
+if (T17 < TN) jump dowhile_1
+Block dowhile_end_1
+Ti = 0;
+Block dowhile_2
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+Tj = 0;
+T30 = TN - Ti;
+if (0 >= T30) jump for_end_1
+Block if_1
+T32 = num_copy[Tj] ;
+if (T32 <= Tbiggest) jump if_1_end
+Block if_1_than
+T35 = num_copy[Tj] ;
+Tbiggest = T35;
+Tbiggest_tag = Tj;
+Block if_1_end
+T39 = Tj + 1;
+Tj = Tj + 1;
+T30 = TN - Ti;
+if (T39 < T30) jump if_1
+Block for_end_1
+T42 = TN - 1;
+T44 = T42 - Ti;
+T45 = num_copy[T44] ;
+T50 = T42 - Ti;
+num_copy[T50] = Tbiggest;
+num_copy[Tbiggest_tag] = T45;
+T56 = Ti + 1;
+Ti = Ti + 1;
+if (T56 < TN) jump dowhile_2
+Block dowhile_end_2
+T60 = num_copy[Tmiddle_n] ;
+$v0 = T60;
+jump _RETURN_Middle_Number_1;
+Block _RETURN_Middle_Number_1
+pop 424Bit;
+return ;
+__end funciton__
+
+
+__function Middle_Number_2 start__
+Block Middle_Number_2
+TN = para_int_N;
+ARR int num_copy[100];
+push 424Bit;
+T63 = TN / 2;
+Tmiddle_n = T63;
+Ti = 0;
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+Ti = 0;
+Ti = 0;
+if (0 >= TN) jump for_end_2
+Block for_body_2
+T76 = _Gnum[Ti] ;
+num_copy[Ti] = T76;
+T81 = Ti + 1;
+Ti = Ti + 1;
+if (T81 < TN) jump for_body_2
+Block for_end_2
+Ti = 0;
+Ti = 0;
+if (0 >= TN) jump for_end_3
+Block for_body_3
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+T94 = TN - Ti;
+if (0 >= T94) jump while_end_1
+Block if_2
+T96 = num_copy[Tj] ;
+if (T96 <= Tbiggest) jump if_2_end
+Block if_2_than
+T99 = num_copy[Tj] ;
+Tbiggest = T99;
+Tbiggest_tag = Tj;
+Block if_2_end
+T103 = Tj + 1;
+Tj = Tj + 1;
+T94 = TN - Ti;
+if (T103 < T94) jump if_2
+Block while_end_1
+T106 = TN - 1;
+T108 = T106 - Ti;
+T109 = num_copy[T108] ;
+T114 = T106 - Ti;
+num_copy[T114] = Tbiggest;
+num_copy[Tbiggest_tag] = T109;
+T120 = Ti + 1;
+Ti = Ti + 1;
+if (T120 < TN) jump for_body_3
+Block for_end_3
+T122 = num_copy[Tmiddle_n] ;
+$v0 = T122;
+jump _RETURN_Middle_Number_2;
+Block _RETURN_Middle_Number_2
+pop 424Bit;
+return ;
+__end funciton__
+
+
+__function Middle_Number_3 start__
+Block Middle_Number_3
+TN = para_int_N;
+ARR int num_copy[100];
+push 424Bit;
+T125 = TN / 2;
+Tmiddle_n = T125;
+Ti = 0;
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+Ti = 0;
+if (0 >= TN) jump while_end_2
+Block while_body_2
+T137 = _Gnum[Ti] ;
+num_copy[Ti] = T137;
+T142 = Ti + 1;
+Ti = Ti + 1;
+if (T142 < TN) jump while_body_2
+Block while_end_2
+Ti = 0;
+if (0 >= TN) jump while_end_3
+Block while_body_3
+Tj = 0;
+Tbiggest = $0 - 1;
+Tbiggest_tag = $0 - 1;
+Tj = 0;
+T155 = TN - Ti;
+if (0 >= T155) jump for_end_4
+Block if_3
+T157 = num_copy[Tj] ;
+if (T157 <= Tbiggest) jump if_3_end
+Block if_3_than
+T160 = num_copy[Tj] ;
+Tbiggest = T160;
+Tbiggest_tag = Tj;
+Block if_3_end
+T164 = Tj + 1;
+Tj = Tj + 1;
+T155 = TN - Ti;
+if (T164 < T155) jump if_3
+Block for_end_4
+T167 = TN - 1;
+T169 = T167 - Ti;
+T170 = num_copy[T169] ;
+T175 = T167 - Ti;
+num_copy[T175] = Tbiggest;
+num_copy[Tbiggest_tag] = T170;
+T181 = Ti + 1;
+Ti = Ti + 1;
+if (T181 < TN) jump while_body_3
+Block while_end_3
+T183 = num_copy[Tmiddle_n] ;
+$v0 = T183;
+jump _RETURN_Middle_Number_3;
+Block _RETURN_Middle_Number_3
+pop 424Bit;
+return ;
+__end funciton__
+
+
+__function Nearest_Point_1 start__
+Block Nearest_Point_1
+Tn = para_int_n;
+TN = para_int_N;
+push 16Bit;
+Tdistance = 2147483647;
+Ttag = $0 - 1;
+Ti = 0;
+Block if_4
+T189 = _Gx[Tn] ;
+T191 = _Gx[Ti] ;
+T192 = T189 - T191;
+T198 = T189 - T191;
+T200 = T192 * T198;
+T202 = _Gy[Tn] ;
+T204 = _Gy[Ti] ;
+T205 = T202 - T204;
+T211 = T202 - T204;
+T213 = T205 * T211;
+T214 = T200 + T213;
+if (T214 >= Tdistance) jump if_4_end
+Block if_5
+if (Ti == Tn) jump if_5_end
+Block if_5_than
+T219 = _Gx[Tn] ;
+T221 = _Gx[Ti] ;
+T222 = T219 - T221;
+T228 = T219 - T221;
+T230 = T222 * T228;
+T232 = _Gy[Tn] ;
+T234 = _Gy[Ti] ;
+T235 = T232 - T234;
+T241 = T232 - T234;
+T243 = T235 * T241;
+Tdistance = T230 + T243;
+Ttag = Ti;
+Block if_5_end
+Block if_4_end
+T248 = Ti + 1;
+Ti = Ti + 1;
+if (T248 < TN) jump if_4
+Block if_6
+T253 = $0 - 1;
+if (Ttag != T253) jump if_6_end
+Block if_6_than
+print(0);
+print('\n')
+Block if_6_end
+$v0 = Ttag;
+jump _RETURN_Nearest_Point_1;
+Block _RETURN_Nearest_Point_1
+pop 16Bit;
+return ;
+__end funciton__
+
+
+__function Nearest_Point_2 start__
+Block Nearest_Point_2
+Tn = para_int_n;
+TN = para_int_N;
+push 16Bit;
+Tdistance = 2147483647;
+Ttag = $0 - 1;
+Ti = 0;
+Ti = 0;
+if (0 >= TN) jump if_9
+Block if_7
+T263 = _Gx[Tn] ;
+T265 = _Gx[Ti] ;
+T266 = T263 - T265;
+T272 = T263 - T265;
+T274 = T266 * T272;
+T276 = _Gy[Tn] ;
+T278 = _Gy[Ti] ;
+T279 = T276 - T278;
+T285 = T276 - T278;
+T287 = T279 * T285;
+T288 = T274 + T287;
+if (T288 >= Tdistance) jump if_7_end
+Block if_8
+if (Ti == Tn) jump if_8_end
+Block if_8_than
+T293 = _Gx[Tn] ;
+T295 = _Gx[Ti] ;
+T296 = T293 - T295;
+T302 = T293 - T295;
+T304 = T296 * T302;
+T306 = _Gy[Tn] ;
+T308 = _Gy[Ti] ;
+T309 = T306 - T308;
+T315 = T306 - T308;
+T317 = T309 * T315;
+Tdistance = T304 + T317;
+Ttag = Ti;
+Block if_8_end
+Block if_7_end
+T322 = Ti + 1;
+Ti = Ti + 1;
+if (T322 < TN) jump if_7
+Block if_9
+T325 = $0 - 1;
+if (Ttag != T325) jump if_9_end
+Block if_9_than
+print(1);
+print('\n')
+Block if_9_end
+$v0 = Ttag;
+jump _RETURN_Nearest_Point_2;
+Block _RETURN_Nearest_Point_2
+pop 16Bit;
+return ;
+__end funciton__
+
+
+__function Nearest_Point_3 start__
+Block Nearest_Point_3
+Tn = para_int_n;
+TN = para_int_N;
+push 16Bit;
+Tdistance = 2147483647;
+Ttag = $0 - 1;
+Ti = 0;
+if (0 >= TN) jump if_12
+Block if_10
+T334 = _Gx[Tn] ;
+T336 = _Gx[Ti] ;
+T337 = T334 - T336;
+T343 = T334 - T336;
+T345 = T337 * T343;
+T347 = _Gy[Tn] ;
+T349 = _Gy[Ti] ;
+T350 = T347 - T349;
+T356 = T347 - T349;
+T358 = T350 * T356;
+T359 = T345 + T358;
+if (T359 >= Tdistance) jump if_10_end
+Block if_11
+if (Ti == Tn) jump if_11_end
+Block if_11_than
+T364 = _Gx[Tn] ;
+T366 = _Gx[Ti] ;
+T367 = T364 - T366;
+T373 = T364 - T366;
+T375 = T367 * T373;
+T377 = _Gy[Tn] ;
+T379 = _Gy[Ti] ;
+T380 = T377 - T379;
+T386 = T377 - T379;
+T388 = T380 * T386;
+Tdistance = T375 + T388;
+Ttag = Ti;
+Block if_11_end
+Block if_10_end
+T393 = Ti + 1;
+Ti = Ti + 1;
+if (T393 < TN) jump if_10
+Block if_12
+T396 = $0 - 1;
+if (Ttag != T396) jump if_12_end
+Block if_12_than
+print(2);
+print('\n')
+Block if_12_end
+$v0 = Ttag;
+jump _RETURN_Nearest_Point_3;
+Block _RETURN_Nearest_Point_3
+pop 16Bit;
+return ;
+__end funciton__
 
 
 __function main start__
-  Block main
-  $fp = $sp;
-  scanf(_Ga);
-  T0 = _Ga;
-  _Gb = T0;
-  T1 = _Ga;
-  T2 = _Gb;
-  T3 = T1 + T2;
-  _Gc = T3;
-  T4 = _Gc;
-  T5 = _Gb;
-  T6 = T4 - T5;
-  _Gd = T6;
-  T7 = _Gd;
-  _Ga = T7;
-  T8 = _Ga;
-  T9 = _Gd;
-  T10 = T8 + T9;
-  _Ge = T10;
-  T11 = _Ga;
-  print(T11);
-  print('\n')
-  T12 = _Gb;
-  print(T12);
-  print('\n')
-  T13 = _Gc;
-  print(T13);
-  print('\n')
-  T14 = _Gd;
-  print(T14);
-  print('\n')
-  T15 = _Ge;
-  print(T15);
-  print('\n')
-  Block _RETURN_main
+Block main
+$fp = $sp;
+push 36Bit;
+scanf(_TN);
+if (TN <= 100) jump if_13_end
+Block if_13_than
+TN = 100;
+Block if_13_end
+Tk = 0;
+if (0 >= TN) jump for_end_6
+Block for_body_6
+scanf(_Ti);
+_Gnum[Tk] = Ti;
+T408 = Tk + 1;
+Tk = Tk + 1;
+if (T408 < TN) jump for_body_6
+Block for_end_6
+Tk = 0;
+if (0 >= TN) jump for_end_7
+Block for_body_7
+scanf(_Ti);
+_Gx[Tk] = Ti;
+T416 = Tk + 1;
+Tk = Tk + 1;
+if (T416 < TN) jump for_body_7
+Block for_end_7
+Tk = 0;
+if (0 >= TN) jump for_end_8
+Block for_body_8
+scanf(_Ti);
+_Gy[Tk] = Ti;
+T424 = Tk + 1;
+Tk = Tk + 1;
+if (T424 < TN) jump for_body_8
+Block for_end_8
+scanf(_Tpoint_n);
+print(3);
+print(-960);
+print('\n')
+Tcorrect1 = 0;
+print(4);
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_1;
+Block _AFTER_CALL_Middle_Number_1_0
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T434 = $v0;
+print(T434);
+print('\n')
+print(5);
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_2;
+Block _AFTER_CALL_Middle_Number_2_1
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T436 = $v0;
+print(T436);
+print('\n')
+print(6);
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_3;
+Block _AFTER_CALL_Middle_Number_3_2
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T438 = $v0;
+print(T438);
+print('\n')
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_1;
+Block _AFTER_CALL_Middle_Number_1_3
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T440 = $v0;
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_2;
+Block _AFTER_CALL_Middle_Number_2_4
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T442 = $v0;
+if (T440 != T442) jump if_14_else
+Block if_15
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_2;
+Block _AFTER_CALL_Middle_Number_2_5
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T444 = $v0;
+push $fp;
+push pool;
+push TN;
+$fp = $sp + 4;
+call Middle_Number_3;
+Block _AFTER_CALL_Middle_Number_3_6
+pop 4Bit;
+pop pool;
+pop $fpBit;
+T446 = $v0;
+if (T444 != T446) jump if_15_else
+Block if_15_than
+print(7);
+print('\n')
+Tcorrect1 = 1;
+jump if_15_end;
+Block if_15_else
+print(8);
+print('\n')
+Block if_15_end
+jump if_14_end;
+Block if_14_else
+print(9);
+print('\n')
+Block if_14_end
+Tcorrect2 = 0;
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_1;
+Block _AFTER_CALL_Nearest_Point_1_7
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T451 = $v0;
+print(10);
+print(T451);
+print('\n')
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_2;
+Block _AFTER_CALL_Nearest_Point_2_8
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T455 = $v0;
+print(11);
+print(T455);
+print('\n')
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_3;
+Block _AFTER_CALL_Nearest_Point_3_9
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T459 = $v0;
+print(12);
+print(T459);
+print('\n')
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_1;
+Block _AFTER_CALL_Nearest_Point_1_10
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T463 = $v0;
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_2;
+Block _AFTER_CALL_Nearest_Point_2_11
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T466 = $v0;
+if (T463 != T466) jump if_16_else
+Block if_17
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_2;
+Block _AFTER_CALL_Nearest_Point_2_12
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T469 = $v0;
+push $fp;
+push pool;
+push Tpoint_n;
+push TN;
+$fp = $sp + 8;
+call Nearest_Point_3;
+Block _AFTER_CALL_Nearest_Point_3_13
+pop 8Bit;
+pop pool;
+pop $fpBit;
+T472 = $v0;
+if (T469 != T472) jump if_17_else
+Block if_17_than
+print(13);
+print('\n')
+Tcorrect2 = 1;
+jump if_17_end;
+Block if_17_else
+print(14);
+print('\n')
+Block if_17_end
+jump if_18;
+Block if_16_else
+print(15);
+print('\n')
+Block if_18
+if (Tcorrect1 != 1) jump if_18_else
+Block if_19
+if (Tcorrect2 != 1) jump if_19_else
+Block if_19_than
+print(16);
+print('\n')
+jump if_19_end;
+Block if_19_else
+print(17);
+print('\n')
+Block if_19_end
+jump _RETURN_main;
+Block if_18_else
+print(18);
+print('\n')
+Block _RETURN_main
 __end funciton__
 

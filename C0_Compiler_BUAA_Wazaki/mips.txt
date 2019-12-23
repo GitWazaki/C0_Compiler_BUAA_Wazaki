@@ -1,60 +1,1074 @@
 # C0_Compiler_BUAA_Wazaki gen MIPS
 .data
+_STRING_0:.asciiz "Can not find Nearest_Point" 
+_STRING_1:.asciiz "Can not find Nearest_Point" 
+_STRING_2:.asciiz "Can not find Nearest_Point" 
+_STRING_3:.asciiz "Caculate of const is " 
+_STRING_4:.asciiz "In function 1,Middle_Number is " 
+_STRING_5:.asciiz "In function 2,Middle_Number is " 
+_STRING_6:.asciiz "In function 3,Middle_Number is " 
+_STRING_7:.asciiz "Middle_Number Answer Correct!" 
+_STRING_8:.asciiz "Middle_Number Error1!" 
+_STRING_9:.asciiz "Middle_Number Error2!" 
+_STRING_10:.asciiz "In function 1,Nearest point is " 
+_STRING_11:.asciiz "In function 2,Nearest point is " 
+_STRING_12:.asciiz "In function 3,Nearest point is " 
+_STRING_13:.asciiz "Nearest_Point Answer Correct!" 
+_STRING_14:.asciiz "Nearest_Point Error1!" 
+_STRING_15:.asciiz "Nearest_Point Error2!" 
+_STRING_16:.asciiz "All Cyclic Procedure Right!" 
+_STRING_17:.asciiz "Cyclic Procedure Error!" 
+_STRING_18:.asciiz "Cyclic Procedure Error!" 
 .text
+addi $k1, $gp, 32000
 j main
+
+Middle_Number_1:
+lw $t0, 0($fp)
+addi $sp, $sp, -424
+srl $t1, $t0, 1
+move $t2, $t1
+li $t1, 0
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+li $t1, 0
+dowhile_1:
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+lw $t6, 800($k0)
+sll $k0, $t1, 2
+sub $k0, $fp, $k0
+sw $t6, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, dowhile_1
+dowhile_end_1:
+li $t1, 0
+dowhile_2:
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+li $t3, 0
+subu $t6, $t0, $t1
+ble $t6, 0, for_end_1
+if_1:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+ble $t7, $t4, if_1_end
+if_1_than:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+move $t4, $t7
+move $t5, $t3
+if_1_end:
+addi $t7, $t3, 1
+addi $t3, $t3, 1
+subu $t6, $t0, $t1
+blt $t7, $t6, if_1
+for_end_1:
+subi $t6, $t0, 1
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+lw $t8, -28($k0)
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+sw $t4, -28($k0)
+sll $k0, $t5, 2
+sub $k0, $fp, $k0
+sw $t8, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, dowhile_2
+dowhile_end_2:
+sll $k0, $t2, 2
+sub $k0, $fp, $k0
+lw $t0, -28($k0)
+move $v0, $t0
+j _RETURN_Middle_Number_1
+_RETURN_Middle_Number_1:
+addi $sp, $sp, 424
+jr $ra
+
+Middle_Number_2:
+lw $t0, 0($fp)
+addi $sp, $sp, -424
+srl $t1, $t0, 1
+move $t2, $t1
+li $t1, 0
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+li $t1, 0
+li $t1, 0
+ble $t0, 0, for_end_2
+for_body_2:
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+lw $t6, 800($k0)
+sll $k0, $t1, 2
+sub $k0, $fp, $k0
+sw $t6, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, for_body_2
+for_end_2:
+li $t1, 0
+li $t1, 0
+ble $t0, 0, for_end_3
+for_body_3:
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+subu $t6, $t0, $t1
+ble $t6, 0, while_end_1
+if_2:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+ble $t7, $t4, if_2_end
+if_2_than:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+move $t4, $t7
+move $t5, $t3
+if_2_end:
+addi $t7, $t3, 1
+addi $t3, $t3, 1
+subu $t6, $t0, $t1
+blt $t7, $t6, if_2
+while_end_1:
+subi $t6, $t0, 1
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+lw $t8, -28($k0)
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+sw $t4, -28($k0)
+sll $k0, $t5, 2
+sub $k0, $fp, $k0
+sw $t8, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, for_body_3
+for_end_3:
+sll $k0, $t2, 2
+sub $k0, $fp, $k0
+lw $t0, -28($k0)
+move $v0, $t0
+j _RETURN_Middle_Number_2
+_RETURN_Middle_Number_2:
+addi $sp, $sp, 424
+jr $ra
+
+Middle_Number_3:
+lw $t0, 0($fp)
+addi $sp, $sp, -424
+srl $t1, $t0, 1
+move $t2, $t1
+li $t1, 0
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+li $t1, 0
+ble $t0, 0, while_end_2
+while_body_2:
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+lw $t6, 800($k0)
+sll $k0, $t1, 2
+sub $k0, $fp, $k0
+sw $t6, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, while_body_2
+while_end_2:
+li $t1, 0
+ble $t0, 0, while_end_3
+while_body_3:
+li $t3, 0
+subi $t4, $0, 1
+subi $t5, $0, 1
+li $t3, 0
+subu $t6, $t0, $t1
+ble $t6, 0, for_end_4
+if_3:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+ble $t7, $t4, if_3_end
+if_3_than:
+sll $k0, $t3, 2
+sub $k0, $fp, $k0
+lw $t7, -28($k0)
+move $t4, $t7
+move $t5, $t3
+if_3_end:
+addi $t7, $t3, 1
+addi $t3, $t3, 1
+subu $t6, $t0, $t1
+blt $t7, $t6, if_3
+for_end_4:
+subi $t6, $t0, 1
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+lw $t8, -28($k0)
+subu $t7, $t6, $t1
+sll $k0, $t7, 2
+sub $k0, $fp, $k0
+sw $t4, -28($k0)
+sll $k0, $t5, 2
+sub $k0, $fp, $k0
+sw $t8, -28($k0)
+addi $t6, $t1, 1
+addi $t1, $t1, 1
+blt $t6, $t0, while_body_3
+while_end_3:
+sll $k0, $t2, 2
+sub $k0, $fp, $k0
+lw $t0, -28($k0)
+move $v0, $t0
+j _RETURN_Middle_Number_3
+_RETURN_Middle_Number_3:
+addi $sp, $sp, 424
+jr $ra
+
+Nearest_Point_1:
+lw $t0, 0($fp)
+lw $t1, -4($fp)
+addi $sp, $sp, -16
+li $t2, 2147483647
+subi $t3, $0, 1
+li $t4, 0
+if_4:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t7, $t5, $t6
+bge $t7, $t2, if_4_end
+if_5:
+beq $t4, $t0, if_5_end
+if_5_than:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t2, $t5, $t6
+move $t3, $t4
+if_5_end:
+if_4_end:
+addi $t5, $t4, 1
+addi $t4, $t4, 1
+blt $t5, $t1, if_4
+if_6:
+subi $t0, $0, 1
+bne $t3, $t0, if_6_end
+if_6_than:
+la $a0, _STRING_0
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_6_end:
+move $v0, $t3
+j _RETURN_Nearest_Point_1
+_RETURN_Nearest_Point_1:
+addi $sp, $sp, 16
+jr $ra
+
+Nearest_Point_2:
+lw $t0, 0($fp)
+lw $t1, -4($fp)
+addi $sp, $sp, -16
+li $t2, 2147483647
+subi $t3, $0, 1
+li $t4, 0
+li $t4, 0
+ble $t1, 0, if_9
+if_7:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t7, $t5, $t6
+bge $t7, $t2, if_7_end
+if_8:
+beq $t4, $t0, if_8_end
+if_8_than:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t2, $t5, $t6
+move $t3, $t4
+if_8_end:
+if_7_end:
+addi $t5, $t4, 1
+addi $t4, $t4, 1
+blt $t5, $t1, if_7
+if_9:
+subi $t0, $0, 1
+bne $t3, $t0, if_9_end
+if_9_than:
+la $a0, _STRING_1
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_9_end:
+move $v0, $t3
+j _RETURN_Nearest_Point_2
+_RETURN_Nearest_Point_2:
+addi $sp, $sp, 16
+jr $ra
+
+Nearest_Point_3:
+lw $t0, 0($fp)
+lw $t1, -4($fp)
+addi $sp, $sp, -16
+li $t2, 2147483647
+subi $t3, $0, 1
+li $t4, 0
+ble $t1, 0, if_12
+if_10:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t7, $t5, $t6
+bge $t7, $t2, if_10_end
+if_11:
+beq $t4, $t0, if_11_end
+if_11_than:
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t5, 0($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t6, 0($k0)
+subu $t7, $t5, $t6
+subu $t8, $t5, $t6
+mul $t5, $t7, $t8
+sll $k0, $t0, 2
+add $k0, $k0, $gp
+lw $t6, 400($k0)
+sll $k0, $t4, 2
+add $k0, $k0, $gp
+lw $t7, 400($k0)
+subu $t8, $t6, $t7
+subu $t9, $t6, $t7
+mul $t6, $t8, $t9
+addu $t2, $t5, $t6
+move $t3, $t4
+if_11_end:
+if_10_end:
+addi $t5, $t4, 1
+addi $t4, $t4, 1
+blt $t5, $t1, if_10
+if_12:
+subi $t0, $0, 1
+bne $t3, $t0, if_12_end
+if_12_than:
+la $a0, _STRING_2
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_12_end:
+move $v0, $t3
+j _RETURN_Nearest_Point_3
+_RETURN_Nearest_Point_3:
+addi $sp, $sp, 16
+jr $ra
 
 main:
 move $fp, $sp
+addi $sp, $sp, -36
 li $v0, 5
 syscall
-sw $v0, 0($gp)
-lw $t0, 0($gp)
-sw $t0, 4($gp)
-lw $t0, 0($gp)
-lw $t1, 4($gp)
-addu $t2, $t0, $t1
-sw $t2, 8($gp)
-lw $t0, 8($gp)
-lw $t1, 4($gp)
-subu $t2, $t0, $t1
-sw $t2, 12($gp)
-lw $t0, 12($gp)
-sw $t0, 0($gp)
-lw $t0, 0($gp)
-lw $t1, 12($gp)
-addu $t2, $t0, $t1
-sw $t2, 16($gp)
-lw $t0, 0($gp)
-move $a0, $t0
+move $t0, $v0
+ble $t0, 100, if_13_end
+if_13_than:
+li $t0, 100
+if_13_end:
+li $t1, 0
+ble $t0, 0, for_end_6
+for_body_6:
+li $v0, 5
+syscall
+move $t2, $v0
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+sw $t2, 800($k0)
+addi $t3, $t1, 1
+addi $t1, $t1, 1
+blt $t3, $t0, for_body_6
+for_end_6:
+li $t1, 0
+ble $t0, 0, for_end_7
+for_body_7:
+li $v0, 5
+syscall
+move $t2, $v0
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+sw $t2, 0($k0)
+addi $t3, $t1, 1
+addi $t1, $t1, 1
+blt $t3, $t0, for_body_7
+for_end_7:
+li $t1, 0
+ble $t0, 0, for_end_8
+for_body_8:
+li $v0, 5
+syscall
+move $t2, $v0
+sll $k0, $t1, 2
+add $k0, $k0, $gp
+sw $t2, 400($k0)
+addi $t3, $t1, 1
+addi $t1, $t1, 1
+blt $t3, $t0, for_body_8
+for_end_8:
+li $v0, 5
+syscall
+move $t1, $v0
+la $a0, _STRING_3
+li $v0, 4
+syscall
+li $a0, -960
 li $v0, 1
 syscall
 li $a0, '\n'
 li $v0, 11
 syscall
-lw $t0, 4($gp)
-move $a0, $t0
+li $t2, 0
+la $a0, _STRING_4
+li $v0, 4
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_1
+_AFTER_CALL_Middle_Number_1_0:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t3, $v0
+move $a0, $t3
 li $v0, 1
 syscall
 li $a0, '\n'
 li $v0, 11
 syscall
-lw $t0, 8($gp)
-move $a0, $t0
+la $a0, _STRING_5
+li $v0, 4
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_2
+_AFTER_CALL_Middle_Number_2_1:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t3, $v0
+move $a0, $t3
 li $v0, 1
 syscall
 li $a0, '\n'
 li $v0, 11
 syscall
-lw $t0, 12($gp)
-move $a0, $t0
+la $a0, _STRING_6
+li $v0, 4
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_3
+_AFTER_CALL_Middle_Number_3_2:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t3, $v0
+move $a0, $t3
 li $v0, 1
 syscall
 li $a0, '\n'
 li $v0, 11
 syscall
-lw $t0, 16($gp)
-move $a0, $t0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_1
+_AFTER_CALL_Middle_Number_1_3:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t3, $v0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_2
+_AFTER_CALL_Middle_Number_2_4:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+bne $t3, $t4, if_14_else
+if_15:
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_2
+_AFTER_CALL_Middle_Number_2_5:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t3, $v0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 4
+addi $k1, $k1, 0
+jal Middle_Number_3
+_AFTER_CALL_Middle_Number_3_6:
+addi $sp, $sp, 4
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+bne $t3, $t4, if_15_else
+if_15_than:
+la $a0, _STRING_7
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $t2, 1
+j if_15_end
+if_15_else:
+la $a0, _STRING_8
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_15_end:
+j if_14_end
+if_14_else:
+la $a0, _STRING_9
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_14_end:
+li $t3, 0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_1
+_AFTER_CALL_Nearest_Point_1_7:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+la $a0, _STRING_10
+li $v0, 4
+syscall
+move $a0, $t4
 li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_2
+_AFTER_CALL_Nearest_Point_2_8:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+la $a0, _STRING_11
+li $v0, 4
+syscall
+move $a0, $t4
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_3
+_AFTER_CALL_Nearest_Point_3_9:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+la $a0, _STRING_12
+li $v0, 4
+syscall
+move $a0, $t4
+li $v0, 1
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_1
+_AFTER_CALL_Nearest_Point_1_10:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t4, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_2
+_AFTER_CALL_Nearest_Point_2_11:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $sp, $sp, 4
+lw $t4, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t5, $v0
+bne $t4, $t5, if_16_else
+if_17:
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_2
+_AFTER_CALL_Nearest_Point_2_12:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t4, $v0
+sw $fp, ($sp)
+addi $sp, $sp, -4
+sw $t4, ($sp)
+addi $sp, $sp, -4
+sw $t3, ($sp)
+addi $sp, $sp, -4
+sw $t2, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+sw $t1, ($sp)
+addi $sp, $sp, -4
+sw $t0, ($sp)
+addi $sp, $sp, -4
+addi $fp, $sp, 8
+addi $k1, $k1, 0
+jal Nearest_Point_3
+_AFTER_CALL_Nearest_Point_3_13:
+addi $sp, $sp, 8
+addi $sp, $sp, 4
+lw $t0, ($sp)
+addi $sp, $sp, 4
+lw $t1, ($sp)
+addi $sp, $sp, 4
+lw $t2, ($sp)
+addi $sp, $sp, 4
+lw $t3, ($sp)
+addi $sp, $sp, 4
+lw $t4, ($sp)
+addi $k1, $k1, 0
+addi $sp, $sp, 4
+lw $fp, ($sp)
+move $t0, $v0
+bne $t4, $t0, if_17_else
+if_17_than:
+la $a0, _STRING_13
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+li $t3, 1
+j if_17_end
+if_17_else:
+la $a0, _STRING_14
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_17_end:
+j if_18
+if_16_else:
+la $a0, _STRING_15
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_18:
+bne $t2, 1, if_18_else
+if_19:
+bne $t3, 1, if_19_else
+if_19_than:
+la $a0, _STRING_16
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+j if_19_end
+if_19_else:
+la $a0, _STRING_17
+li $v0, 4
+syscall
+li $a0, '\n'
+li $v0, 11
+syscall
+if_19_end:
+j _RETURN_main
+if_18_else:
+la $a0, _STRING_18
+li $v0, 4
 syscall
 li $a0, '\n'
 li $v0, 11

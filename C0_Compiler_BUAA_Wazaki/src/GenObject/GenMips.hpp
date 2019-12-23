@@ -1,7 +1,7 @@
 #pragma once
+#include "../tools/meow.hpp"
 #include "../MidCode/MidInstr.hpp"
 #include "RegPool.hpp"
-#include "../tools/meow.hpp"
 
 using namespace std;
 
@@ -40,11 +40,12 @@ namespace GenObject {
 		void assignRegs(MidIR::Block& block, int block_num);
 		void genInstr(MidIR::MidInstr instr);
 		void pushRegPool(int size);
-		void popRegPool();
+		void popRegPool(MidIR::MidInstr instr);
 		
 		vector<int> pushPoolSize;		// 
 		vector<std::string> used_regs;	//func used regs
 		vector<vector<string>> regs_stack;	//func used regs' stack
+		vector<string> need_push_stack;
 
 	};
 
@@ -53,12 +54,13 @@ namespace GenObject {
 			fout << str << endl;
 		}
 	}
-
+	
 	inline void GenMips::gen() {
 		fout << "# C0_Compiler_BUAA_Wazaki gen MIPS" << endl;
 		fout << ".data" << endl;
 		genGlobals();
 		fout << ".text" << endl;
+		write(FORMAT("addi $k1, $gp, {}", REGPOOL_LOC));
 		fout << "j main" << endl;
 		genFuncs();
 	}
@@ -111,69 +113,58 @@ namespace GenObject {
 		instrs.insert(instrs.begin() + i, instr);
 		i++;
 	}
-
-#define REGPOOL_START 8000 * 4
-
-#define HAVE_NOT_ALLAC(mid_reg) startWith(instrs[i].mid_reg, std::string("_T"))
-
-#define REGPOOL_LOAD(mid_reg, assign_reg)	\
-		do {	\
-			auto& instr = instrs[i];	\
-			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
-			instr.mid_reg = #assign_reg;	\
-			insertBefore(instrs, i, MidIR::MidInstr(MidIR::MidInstr::LOAD_GLOBAL, #assign_reg, REGPOOL_START+loc));	\
-		} while(0)
-
-#define REGPOOL_SAVE(mid_reg, assign_reg)	\
-		do {	\
-			auto& instr = instrs[i];	\
-			int loc = 4 * reg_pool.getMemInPool(instr.mid_reg.substr(2));	\
-			instr.mid_reg = #assign_reg;	\
-			insertAfter(instrs, i,MidIR::MidInstr(MidIR::MidInstr::SAVE_GLOBAL, #assign_reg, REGPOOL_START+loc));	\
-		} while(0)
-
-#define assignReg(mid_reg)	\
-		do {	\
-			if (startWith(mid_reg, std::string("_T"))) {	\
-				mid_reg = reg_pool.applyRegInPool(mid_reg);	\
-			} \
-		} while(0)
 	
 	inline void GenMips::assignRegs(MidIR::Block& block, int block_num) {
 		
 		vector<MidIR::MidInstr>& instrs = block.instrs;
-		map<string, MidIR::ActiveRange> ident_to_range = midCodes.func_to_identRange[cur_func_name];
+		map<string, MidIR::VarRange> ident_to_range = midCodes.func_to_identRange[cur_func_name];
 		
 		for (int i = 0; i < instrs.size(); i++) {
-			
-			// 若不是gen MIPS 阶段生成的指令（无行号），则刷新RegPool
-			if(instrs[i].line_num_in_block != -1) {
-				reg_pool.refrashPool(ident_to_range,block_num,instrs[i].line_num_in_block);
-			}
-			
-			//尝试为中间代码中的临时变量分配寄存器
-			assignReg(instrs[i].target);
-			assignReg(instrs[i].source_a);
-			assignReg(instrs[i].source_b);
+			if (!ident_to_range.empty()) {
+				// 若不是gen MIPS 阶段生成的指令（无行号），则刷新RegPool
+				if (instrs[i].line_num_in_block != -1) {
+					reg_pool.refrashPool(ident_to_range, block_num, instrs[i].line_num_in_block);
+				}
 
-			//对还未分配寄存器的中间变量，使用内从
-			if (HAVE_NOT_ALLAC(target)) {
-				if (instrs[i].isLoad_target())
-					REGPOOL_LOAD(target, $a1);
-				if (instrs[i].isSave_target())
-					REGPOOL_SAVE(target, $a1);
-			}
-			if (HAVE_NOT_ALLAC(source_a)) {
-				if (instrs[i].isLoad_a())
-					REGPOOL_LOAD(source_a, $a2);
-				if (instrs[i].isSave_a())
-					REGPOOL_SAVE(source_a, $a2);
-			}
-			if (HAVE_NOT_ALLAC(source_b)) {
-				if (instrs[i].isLoad_b())
-					REGPOOL_LOAD(source_b, $a3);
-				if (instrs[i].isSave_b())
-					REGPOOL_SAVE(source_b, $a3);
+				//尝试为中间代码中的临时变量分配寄存器
+				if (instrs[i].isSave_target()) {
+					assignReg(instrs[i].target);
+				}
+				else {
+					getReg(instrs[i].target);
+				}
+				if (instrs[i].isSave_a()) {
+					assignReg(instrs[i].source_a);
+				}
+				else {
+					getReg(instrs[i].source_a);
+				}
+				if (instrs[i].isSave_b()) {
+					assignReg(instrs[i].source_b);
+				}
+				else {
+					getReg(instrs[i].source_b);
+				}
+
+				//对还未分配寄存器的中间变量，使用内存
+				if (HAVE_NOT_ALLAC(target)) {
+					if (instrs[i].isLoad_target())
+						REGPOOL_LOAD(target, $a1);
+					if (instrs[i].isSave_target())
+						REGPOOL_SAVE(target, $a1);
+				}
+				if (HAVE_NOT_ALLAC(source_a)) {
+					if (instrs[i].isLoad_a())
+						REGPOOL_LOAD(source_a, $a2);
+					if (instrs[i].isSave_a())
+						REGPOOL_SAVE(source_a, $a2);
+				}
+				if (HAVE_NOT_ALLAC(source_b)) {
+					if (instrs[i].isLoad_b())
+						REGPOOL_LOAD(source_b, $a3);
+					if (instrs[i].isSave_b())
+						REGPOOL_SAVE(source_b, $a3);
+				}
 			}
 
 			//对函数调用前后的现场保存PUSH_REGPOOL与POP_REGPOOL特殊处理
@@ -181,9 +172,9 @@ namespace GenObject {
 				// int push_num = stoi(instrs[i].target);
 				
 				used_regs.clear();
-				for (int i = 0; i < reg_pool.globalRegs.size(); i++) {	//记录下检查所有寄存器的使用情况
-					if (reg_pool.regAvailStateMap[reg_pool.globalRegs[i]] == false) {
-						used_regs.push_back(reg_pool.globalRegs[i]);	// 记录下将使用过的寄存器
+				for (int i = 0; i < globalRegs.size(); i++) {	//记录下检查所有寄存器的使用情况
+					if (reg_pool.regAvailStateMap[globalRegs[i]] == false) {
+						used_regs.push_back(globalRegs[i]);	// 记录下将使用过的寄存器
 					}
 				}
 				regs_stack.push_back(used_regs);
@@ -191,11 +182,8 @@ namespace GenObject {
 					insertAfter(instrs, i, { MidIR::MidInstr::PUSH_REG, used_regs[j] });
 					// push_num++;
 				}
-				// 为指令设置参数，source_b函数中已使用的到的内存
-				instrs[i].source_b = to_string(reg_pool.used_mem_size);
-				
-				// push_num += reg_pool.mempool_size;
-				// instrs.insert(instrs.begin() + i + 1 + used_regs.size(), MidIR::MidInstr(MidIR::MidInstr::ADD, "$fp", "$sp", int(push_num * 4)));
+				// instrs[i].source_b = to_string(reg_pool.used_mem_size);	//no use
+				need_push_stack.push_back(instrs[i].target);
 				
 			} else if (instrs[i].midOp == MidIR::MidInstr::POP_REGPOOL) {
 				// 保存的所有使用过的寄存器出栈
@@ -204,6 +192,22 @@ namespace GenObject {
 					insertBefore(instrs, i, { MidIR::MidInstr::POP_REG, used_regs[j] });
 				}
 				regs_stack.pop_back();
+				
+				instrs[i].source_a = to_string(-4 * pushPoolSize.back());
+				pushPoolSize.pop_back();
+				
+				reg_pool.popMemPool();
+			} else if (instrs[i].midOp == MidIR::MidInstr::CALL) {
+				if (need_push_stack.back() == instrs[i].target) {
+					pushPoolSize.push_back(reg_pool.used_mem_size);
+					instrs[i].source_a = to_string(4 * pushPoolSize.back());
+					reg_pool.pushMemPool();
+
+					need_push_stack.pop_back();
+				}
+				else {
+					instrs[i].source_a = "";
+				}
 			}
 		}
 	}
@@ -330,6 +334,9 @@ namespace GenObject {
 		case MidIR::MidInstr::LI:
 			write(FORMAT("li {}, {}", instr.target, instr.source_a));
 			break;
+		case MidIR::MidInstr::LA:
+			write(FORMAT("la {}, {}", instr.target, instr.source_a));
+			break;
 		case MidIR::MidInstr::MOVE:
 			write(FORMAT("move {}, {}", instr.target, instr.source_a));
 			break;
@@ -376,8 +383,14 @@ namespace GenObject {
 			}
 			write(FORMAT("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b));
 			break;
+		case MidIR::MidInstr::BGTZ:
+			write(FORMAT("bgtz {}, {}", instr.target, instr.source_a));
+			break;
 		case MidIR::MidInstr::BGEZ:
 			write(FORMAT("bgez {}, {}", instr.target, instr.source_a));
+			break;
+		case MidIR::MidInstr::BLTZ:
+			write(FORMAT("bltz {}, {}", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::BLEZ:
 			write(FORMAT("blez {}, {}", instr.target, instr.source_a));
@@ -432,7 +445,6 @@ namespace GenObject {
 			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::LOAD_STACK_ARR:
-			// write(FORMAT("lw {}, ({})", instr.target, instr.source_a));
 			if (isNumber(instr.source_b)) {
 				write(FORMAT("addi $k0, $fp, -{}", stoi(instr.source_b) * 4));
 			} else {
@@ -446,7 +458,6 @@ namespace GenObject {
 			write(FORMAT("lw {}, {}($k0)", instr.target, instr.source_a));
 			break;
 		case MidIR::MidInstr::SAVE_STACK_ARR:
-			// write(FORMAT("sw {}, ({})", instr.target, instr.source_a));
 			if (isNumber(instr.source_b)) {
 				write(FORMAT("addi $k0, $fp, -{}", stoi(instr.source_b) * 4));
 			} else {
@@ -459,9 +470,12 @@ namespace GenObject {
 			}
 			write(FORMAT("sw {}, {}($k0)", instr.target, instr.source_a));
 			break;
-		case MidIR::MidInstr::LA:
-			write(FORMAT("la {}, {}", instr.target, instr.source_a));
+		case MidIR::MidInstr::LOAD_POOL:
+			write(FORMAT("lw {}, {}($k1)", instr.target, instr.source_a));
 			break;
+		case MidIR::MidInstr::SAVE_POOL:
+			write(FORMAT("sw {}, {}($k1)", instr.target, instr.source_a));
+			break;;
 			
 		case MidIR::MidInstr::PUSH:
 			write(FORMAT("addi $sp, $sp, -{}", instr.target));
@@ -482,13 +496,15 @@ namespace GenObject {
 			write(FORMAT("lw {}, ($sp)", instr.target));
 			break;
 		case MidIR::MidInstr::PUSH_REGPOOL:
-			pushRegPool(stoi(instr.source_b));
+			// pushRegPool(stoi(instr.source_b));//no use
 			break;
 		case MidIR::MidInstr::POP_REGPOOL:
-			popRegPool();
+			popRegPool(instr);
 			break;
-			
 		case MidIR::MidInstr::CALL:
+			if (isNumber(instr.source_a)) {
+				write(FORMAT("addi $k1, $k1, {}", instr.source_a));
+			}
 			write(FORMAT("jal {}", instr.target));
 			break;
 		case MidIR::MidInstr::RETURN:
@@ -502,23 +518,10 @@ namespace GenObject {
 	}
 
 	inline void GenMips::pushRegPool(int size) {	// 保存所有使用过的mem到栈中
-		// pushPoolSize.push_back(mempool_size);
-		// size为使用mem空间的个数
-		pushPoolSize.push_back(size);
-		for (int i = 0; i < size; i++) {
-			write(FORMAT("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i));
-			write(FORMAT("sw {}, ($sp)", "$k0"));
-			write("addi $sp, $sp, -4");
-		}
 	}
 
-	inline void GenMips::popRegPool() {		//恢复mempool 从栈中
-		for (int i = pushPoolSize.back() - 1; i >= 0; i--) {
-			write("addi $sp, $sp, 4");
-			write(FORMAT("lw {}, ($sp)", "$k0"));
-			write(FORMAT("sw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i));
-		}
-		pushPoolSize.pop_back();
+	inline void GenMips::popRegPool(MidIR::MidInstr instr) {		//恢复mempool 从栈中
+		write(FORMAT("addi $k1, $k1, {}", instr.source_a));
 	}
 
 }

@@ -6,29 +6,26 @@ namespace GenObject {
 
 	class RegPool {
 	public:
-		vector<string> globalRegs = {
-			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
-			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
-			"$v1",
-			"$k1",
-		};
 
-		int used_mem_size = 0;
-		map<string, int> memPool;		//mem to loc 
 		map<string, string> regPool;	//_T{} to reg
 		map<string, bool> regAvailStateMap;		// reg to bool
-
+		int used_mem_size = 0;
+		map<string, int> memPool;		//mem to loc
+		vector<map<string, int>> memPool_stack;
+		vector<int> mem_size_stack;
+		
 		void resetPool();
 		//reg
 		string applyRegInPool(string id);
 		bool checkAvailReg();
 		string getAvailReg();
-		
+		string getRegInPool(string id);
 		//mem
 		int getMemInPool(string id);
-		
+		void pushMemPool();
+		void popMemPool();
 		//alloc
-		void refrashPool(map<string, MidIR::ActiveRange> ident_to_range, int block_num, int line_num);
+		void refrashPool(map<string, MidIR::VarRange> ident_to_range, int block_num, int line_num);
 		
 	};
 
@@ -39,7 +36,8 @@ namespace GenObject {
 		for (int i = 0; i < globalRegs.size(); i++) {
 			regAvailStateMap[globalRegs[i]] = true;
 		}
-		// regs_stack.clear();
+		mem_size_stack.clear();
+		memPool_stack.clear();
 	}
 
 	inline string RegPool::applyRegInPool(string id) {
@@ -73,6 +71,13 @@ namespace GenObject {
 		}
 	}
 
+	inline string RegPool::getRegInPool(string id) {
+		if (notFound(regPool, id)) {
+			return id;
+		}
+		return regPool[id];
+	}
+
 	// memPool
 	inline int RegPool::getMemInPool(string id) {
 		if (memPool.find(id) == memPool.end()) {// 还未分配内存空间则进行分配
@@ -82,8 +87,22 @@ namespace GenObject {
 		return memPool[id];	//已分配内存空间
 	}
 
+	inline void RegPool::pushMemPool() {
+		memPool_stack.push_back(memPool);
+		mem_size_stack.push_back(used_mem_size);
+		memPool.clear();
+		used_mem_size = 0;
+	}
+
+	inline void RegPool::popMemPool() {
+		memPool = memPool_stack.back();
+		used_mem_size = mem_size_stack.back();
+		memPool_stack.pop_back();
+		mem_size_stack.pop_back();
+	}
+
 	// 刷新寄存器池，释放失效变量所占用的寄存器
-	inline void RegPool::refrashPool(map<string, MidIR::ActiveRange> ident_to_range, int block_num,
+	inline void RegPool::refrashPool(map<string, MidIR::VarRange> ident_to_range, int block_num,
 		int line_num) {
 		vector<string> erase_list;
 		for (auto id : regPool) {
